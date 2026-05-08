@@ -1,0 +1,4 @@
+leaveId,employeeId,leaveType,startDate,endDate,notes,status
+2,10007,Personal Leave,2026-03-31,2026-03-31,,Pending
+0,10001,Other,2026-04-17,2026-04-20,,Approved
+0,10005,Personal Leave,2026-03-31,2026-03-31,,Pending
