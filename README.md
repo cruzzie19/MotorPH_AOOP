@@ -1,8 +1,15 @@
-# MO-IT110 Object-Oriented Programming | Group 19
+# MO-IT113 - Advanced Object-oriented Programming | Group 19
+
+Members:
+- Elizabeth Gelena
+- Miguel Roa
+- Leianna Khay Cruz
+- Khaesey Angel Tablante
+- Spencer Jay Matula
 
 ## MotorPH Payroll System
 A Java Swing desktop application for managing HR and payroll operations at MotorPH.
-Developed as the course project for MO-IT110 Object-Oriented Programming, with the guidance of Sir Glenn Baluyot.
+Developed as the course project for MO-IT113 - Advanced Object-oriented Programming, with the guidance of Sir Glenn Baluyot.
 
 ---
 
@@ -271,10 +278,3 @@ Login credentials are created by the employee's number being the username. Passw
 - Default passwords are managed by PasswordManager. Use the Forgot Password? link on the login screen to reset credentials.
 - The Payroll module is currently scaffolded and will be completed in a bit.
 
-## Group Members
-
-### Developers
-- Trisha Gayle Dela Cruz
-- Rhynne Gracelle Pontanilla
-- Ma. Dennise Berja
-- Leianna Khay Cruz
