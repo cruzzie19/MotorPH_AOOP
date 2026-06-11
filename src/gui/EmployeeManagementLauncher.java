@@ -7,12 +7,10 @@ package gui;
 
 import model.Employee;
 import repository.BulkAccountGenerator;
-import repository.CsvEmployeeRepository;
+import repository.DbEmployeeRepository;
+import repository.EmployeeRepository;
 
 import javax.swing.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class EmployeeManagementLauncher {
 
@@ -20,10 +18,7 @@ public class EmployeeManagementLauncher {
         SwingUtilities.invokeLater(() -> {
 
             try {
-                Path csvPath = resolveEmployeeCsvPath();
-
-                // Generate login accounts from CSV
-                CsvEmployeeRepository repo = new CsvEmployeeRepository(csvPath.toString());
+                EmployeeRepository repo = new DbEmployeeRepository();
                 BulkAccountGenerator.generateAccounts(repo);
 
                 System.out.println("Employee accounts generated.");
@@ -50,24 +45,5 @@ public class EmployeeManagementLauncher {
             // Launch the new CardLayout dashboard
             MainDashboardLauncher.launch(loggedInEmployee);
         });
-    }
-
-    private static Path resolveEmployeeCsvPath() {
-        String fileName = "MotorPH Employee Record.csv";
-
-        Path[] candidates = new Path[] {
-                Paths.get("data", fileName),
-                Paths.get("src", "data", fileName),
-                Paths.get(System.getProperty("user.dir"), "data", fileName),
-                Paths.get(System.getProperty("user.dir"), "src", "data", fileName)
-        };
-
-        for (Path candidate : candidates) {
-            if (Files.exists(candidate)) {
-                return candidate.toAbsolutePath().normalize();
-            }
-        }
-
-        return candidates[1].toAbsolutePath().normalize();
     }
 }

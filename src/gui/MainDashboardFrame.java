@@ -24,7 +24,6 @@ import service.SessionManager;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.nio.file.Path;
 
 public class MainDashboardFrame extends JFrame {
 
@@ -41,7 +40,6 @@ public class MainDashboardFrame extends JFrame {
     private static final Color MUTED = new Color(145, 145, 145);
 
     private final EmployeeRepository employeeRepo;
-    private final Path employeeCsvPath;
     private final Employee currentUser;
     private final LeaveService leaveService;
 
@@ -53,11 +51,10 @@ public class MainDashboardFrame extends JFrame {
     private final CardLayout cardLayout;
     private final JPanel contentPanel;
 
-    public MainDashboardFrame(EmployeeRepository employeeRepo, Path employeeCsvPath, Employee loggedInEmployee) {
+    public MainDashboardFrame(EmployeeRepository employeeRepo, Employee loggedInEmployee) {
         super("MotorPH Payroll System");
 
         this.employeeRepo = employeeRepo;
-        this.employeeCsvPath = employeeCsvPath;
         this.currentUser = SessionManager.getCurrentUser() != null
                 ? SessionManager.getCurrentUser()
                 : loggedInEmployee;
@@ -263,7 +260,7 @@ public class MainDashboardFrame extends JFrame {
     }
 
     private JPanel createEmployeesCard() {
-        return new EmployeeManagementPanel(employeeRepo, employeeCsvPath, currentUser);
+        return new EmployeeManagementPanel(employeeRepo, "the employee database", currentUser);
     }
 
     private JPanel createPayrollCard() {

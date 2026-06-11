@@ -7,44 +7,21 @@
  *
  * @author Rhynne Gracelle
  */
-
 package gui;
 
 import model.Employee;
-import repository.CsvEmployeeRepository;
+import repository.DbEmployeeRepository;
 import repository.EmployeeRepository;
 
 import javax.swing.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class MainDashboardLauncher {
 
     public static void launch(Employee loggedInEmployee) {
-        Path csvPath = resolveEmployeeCsvPath();
-        EmployeeRepository repo = new CsvEmployeeRepository(csvPath.toString());
+        EmployeeRepository repo = new DbEmployeeRepository();
 
         SwingUtilities.invokeLater(() ->
-                new MainDashboardFrame(repo, csvPath, loggedInEmployee).setVisible(true)
+                new MainDashboardFrame(repo, loggedInEmployee).setVisible(true)
         );
-    }
-
-    private static Path resolveEmployeeCsvPath() {
-        String fileName = "MotorPH Employee Record.csv";
-        Path[] candidates = new Path[]{
-                Paths.get("data", fileName),
-                Paths.get("src", "data", fileName),
-                Paths.get(System.getProperty("user.dir"), "data", fileName),
-                Paths.get(System.getProperty("user.dir"), "src", "data", fileName)
-        };
-
-        for (Path candidate : candidates) {
-            if (Files.exists(candidate)) {
-                return candidate.toAbsolutePath().normalize();
-            }
-        }
-
-        return candidates[1].toAbsolutePath().normalize();
     }
 }

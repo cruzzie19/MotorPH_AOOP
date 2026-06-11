@@ -22,7 +22,7 @@ The MotorPH Payroll System is a Java desktop application for managing core HR an
 - **GUI Framework:** Java Swing
 - **IDE:** Apache NetBeans
 - **Build Tool:** Apache Ant (build.xml)
-- **Data Storage:** CSV flat files
+- **Data Storage:** PostgreSQL database + CSV imports for initial seeding
 - **Version Control:** GitHub
 
 ## Folder Structure
@@ -82,11 +82,14 @@ MotorPH_OOP/
 │   │   ├── AttendanceRepository.java
 │   │   ├── BulkAccountGenerator.java
 │   │   ├── CsvAttendanceRepository.java
-│   │   ├── CsvEmployeeRepository.java
 │   │   ├── CsvEmployeeTimeRecord.java
 │   │   ├── CsvLeaveRepository.java
+│   │   ├── DbConnectionFactory.java
+│   │   ├── DbEmployeeRepository.java
 │   │   ├── EmployeeRepository.java
 │   │   └── LeaveRepository.java
+├── sql/
+│   └── motorph_schema.sql
 │   └── Service/
 │       ├── AttendanceService.java
 │       ├── AuthenticationService.java
@@ -187,7 +190,7 @@ The system implements a custom RBAC layer in the RBAC package. Each employee rec
 | Concept        | Implementation                                                                 |
 |----------------|-------------------------------------------------------------------------------|
 | Encapsulation  | Role returns an unmodifiable permission set; SessionManager controls write access to the current user; all model fields are private with public getters |
-| Abstraction    | EmployeeLeaveUiService interface abstracts leave UI operations; EmployeeRepository interface abstracts all data access, with a CSV-backed concrete implementation |
+| Abstraction    | EmployeeLeaveUiService interface abstracts leave UI operations; EmployeeRepository interface abstracts all data access, with a DB-backed concrete implementation |
 | Inheritance    | To be updated                                                                  |
 | Polymorphism   | To be updated                                                                  |
 
@@ -211,7 +214,46 @@ The system implements a custom RBAC layer in the RBAC package. Each employee rec
 
 4. Press Shift + F6 (or Run → Run Project) to build and launch.
 
-5. Log in using an Employee # from data/MotorPH Employee Record.csv as the username.
+5. Set the database connection settings, then log in using an Employee # from the employee table as the username.
+
+### Database Setup
+1. Create a PostgreSQL database named `motorph`.
+2. Run `sql/motorph_schema.sql` to create the tables.
+3. Set one of these connection options before running the app:
+   - JVM properties: `-Dmotorph.db.url=jdbc:postgresql://localhost:5432/motorph -Dmotorph.db.user=postgres -Dmotorph.db.password=...`
+   - Environment variables: `MOTORPH_DB_URL`, `MOTORPH_DB_USER`, `MOTORPH_DB_PASSWORD`
+   - Local properties file: create `config/motorph-db.properties` with `url=...`, `user=...`, `password=...`
+
+### Employee Import
+Use this exact command to seed only the employee table from the CSV:
+
+```powershell
+psql -d motorph -f scripts/import_employee.sql
+```
+
+### Employee CSV Mapping
+The employee import and schema use these CSV columns:
+
+- `Employee #` -> `employee_id`
+- `Last Name` -> `last_name`
+- `First Name` -> `first_name`
+- `Birthday` -> `birthday`
+- `Address` -> `address`
+- `Phone Number` -> `phone_number`
+- `SSS #` -> `sss_number`
+- `Philhealth #` -> `philhealth_number`
+- `TIN #` -> `tin_number`
+- `Pag-ibig #` -> `pag_ibig_number`
+- `Status` -> `status`
+- `Position` -> `position`
+- `Immediate Supervisor` -> `supervisor_id` after name lookup
+- `Basic Salary` -> `basic_salary`
+- `Rice Subsidy` -> `rice_subsidy`
+- `Phone Allowance` -> `phone_allowance`
+- `Clothing Allowance` -> `clothing_allowance`
+- `Gross Semi-monthly Rate` -> `gross_semi_monthly_rate`
+- `Hourly Rate` -> `hourly_rate`
+- `Role` -> `role`
 
 ### Login Credentials
 Login credentials are created by the employee's number being the username. Password is their username + the first letter of their first name capitalized.

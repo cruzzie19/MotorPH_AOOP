@@ -142,8 +142,8 @@ public class AccountService {
     
     public static AccountService createDefault() {
 
-        repository.CsvEmployeeRepository repo =
-                new repository.CsvEmployeeRepository("data/MotorPH Employee Record.csv");
+        repository.DbEmployeeRepository repo =
+            new repository.DbEmployeeRepository();
 
         return new AccountService(repo);
     }

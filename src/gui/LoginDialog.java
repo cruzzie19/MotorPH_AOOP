@@ -6,6 +6,9 @@
 package gui;
 
 import model.Employee;
+import repository.BulkAccountGenerator;
+import repository.DbEmployeeRepository;
+import repository.EmployeeRepository;
 import service.auth.AccountService;
 
 import javax.swing.*;
@@ -77,6 +80,7 @@ public class LoginDialog extends JDialog {
         loadBackgroundImage();
         calculateResponsiveMetrics();
         initializeUI(parent);
+        seedEmployeeAccounts();
         ensureInitialAccount();
     }
 
@@ -354,11 +358,8 @@ public class LoginDialog extends JDialog {
         try {
 
             // Create authentication service
-            repository.CsvEmployeeRepository repo =
-                    new repository.CsvEmployeeRepository("data/MotorPH Employee Record.csv");
-
             service.auth.AccountService accountService =
-                    new service.auth.AccountService(repo);
+                service.auth.AccountService.createDefault();
 
             service.AuthenticationService authService =
                     new service.AuthenticationService(accountService);
@@ -540,7 +541,16 @@ public class LoginDialog extends JDialog {
             Arrays.fill(confirm, '\0');
         }
     }
-   
+
+    private void seedEmployeeAccounts() {
+        try {
+            EmployeeRepository repo = new DbEmployeeRepository();
+            BulkAccountGenerator.generateAccounts(repo);
+        } catch (Exception ex) {
+            System.out.println("Unable to seed employee accounts: " + ex.getMessage());
+        }
+    }
+
 
     public String getUsername() {
         return tfUsername.getText().trim();

@@ -9,12 +9,11 @@ import model.Employee;
 import service.auth.AccountService;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 
 public class BulkAccountGenerator {
 
-    public static void generateAccounts(CsvEmployeeRepository repo) throws IOException {
+    public static void generateAccounts(EmployeeRepository repo) throws IOException {
 
         AccountService accountService = new AccountService(repo);
         List<Employee> employees = repo.loadAll();

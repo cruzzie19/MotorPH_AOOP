@@ -21,7 +21,6 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.math.BigDecimal;
-import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -39,7 +38,7 @@ public class EmployeeManagementPanel extends JPanel {
     private static final Color BORDER = new Color(220, 220, 220);
 
     private final EmployeeService employeeService;
-    private final Path employeeCsvPath;
+    private final String dataSourceLabel;
     private final Employee currentUser;
 
     private final JTable table;
@@ -59,9 +58,11 @@ public class EmployeeManagementPanel extends JPanel {
     private JButton viewBtn;
     private JButton refreshBtn;
 
-    public EmployeeManagementPanel(EmployeeRepository repo, Path employeeCsvPath, Employee currentUser) {
+    public EmployeeManagementPanel(EmployeeRepository repo, String dataSourceLabel, Employee currentUser) {
         this.employeeService = new EmployeeService(repo);
-        this.employeeCsvPath = employeeCsvPath;
+        this.dataSourceLabel = dataSourceLabel == null || dataSourceLabel.isBlank()
+                ? "the employee database"
+                : dataSourceLabel.trim();
         this.currentUser = currentUser;
 
         setLayout(new BorderLayout());
@@ -688,7 +689,7 @@ public class EmployeeManagementPanel extends JPanel {
         populateTable(employees);
 
         if (employees.isEmpty()) {
-            infoLabel.setText("No employee records found. Please check: " + employeeCsvPath.toAbsolutePath());
+            infoLabel.setText("No employee records found. Please check: " + dataSourceLabel);
         } else {
             infoLabel.setText(employees.size() + " employee record(s) loaded.");
         }
