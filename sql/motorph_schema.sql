@@ -1,3 +1,6 @@
+--DROP SCHEMA public CASCADE;
+--CREATE SCHEMA public;
+
 CREATE TABLE employee (
     employee_id VARCHAR(10) PRIMARY KEY,
     last_name VARCHAR(100) NOT NULL,
@@ -90,7 +93,8 @@ CREATE TABLE payroll (
 
 CREATE TABLE credential (
     employee_id VARCHAR(10) PRIMARY KEY,
-    password_hash VARCHAR(255) NOT NULL,
+    password_hash BYTEA NOT NULL,
+	password_salt BYTEA NOT NULL,
     last_password_change TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_credential_employee
         FOREIGN KEY (employee_id)
@@ -103,3 +107,5 @@ CREATE INDEX idx_leave_request_employee_status ON leave_request (employee_id, st
 CREATE INDEX idx_payroll_employee_period ON payroll (employee_id, period_start, period_end);
 CREATE INDEX idx_employee_supervisor_id ON employee (supervisor_id);
 CREATE INDEX idx_employee_role ON employee (role);
+
+--INSERT INTO employee VALUES (10001,'Garcia','Manuel III','1983-10-11','Valero Carpark Building Valero Street 1227, Makati City','966-860-270','44-4506057-3','820126853951','442-605-657-000','691295330870','Regular','Chief Executive Officer',NULL,'HR',90000,1500,2000,1000,45000,535.71);

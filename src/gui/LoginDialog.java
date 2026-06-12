@@ -6,9 +6,6 @@
 package gui;
 
 import model.Employee;
-import repository.BulkAccountGenerator;
-import repository.DbEmployeeRepository;
-import repository.EmployeeRepository;
 import service.auth.AccountService;
 
 import javax.swing.*;
@@ -20,6 +17,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
+import service.AuthenticationService;
+import service.SessionManager;
 
 public class LoginDialog extends JDialog {
 
@@ -80,7 +79,6 @@ public class LoginDialog extends JDialog {
         loadBackgroundImage();
         calculateResponsiveMetrics();
         initializeUI(parent);
-        seedEmployeeAccounts();
         ensureInitialAccount();
     }
 
@@ -358,11 +356,9 @@ public class LoginDialog extends JDialog {
         try {
 
             // Create authentication service
-            service.auth.AccountService accountService =
-                service.auth.AccountService.createDefault();
+            AccountService accountService = AccountService.createDefault();
 
-            service.AuthenticationService authService =
-                    new service.AuthenticationService(accountService);
+            AuthenticationService authService = new AuthenticationService(accountService);
 
             // Attempt login
             Employee employee = authService.login(username, password);
@@ -376,7 +372,7 @@ public class LoginDialog extends JDialog {
                 loggedInPosition = employee.getPosition();
 
                 // Store user in session
-                service.SessionManager.setCurrentUser(employee);
+                SessionManager.setCurrentUser(employee);
 
                 dispose();
 
@@ -457,7 +453,7 @@ public class LoginDialog extends JDialog {
             }
 
             AccountService accountService = AccountService.createDefault();
-            boolean changed = accountService.changePassword(username, oldPassword, newPassword);
+            boolean changed = accountService.registerOrUpdate(username, newPassword);
             if (!changed) {
                 JOptionPane.showMessageDialog(
                         this,
@@ -480,10 +476,22 @@ public class LoginDialog extends JDialog {
 
     private void ensureInitialAccount() {
         AccountService accountService = AccountService.createDefault();
-        if (accountService.hasAccounts()) {
-            return;
-        }
+        
+        try{
+            if (accountService.hasAccounts()) {
+                return;
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
 
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Failed due to a system error.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+        
         JTextField usernameField = new JTextField(20);
         JPasswordField passwordField = new JPasswordField(20);
         JPasswordField confirmField = new JPasswordField(20);
@@ -526,7 +534,7 @@ public class LoginDialog extends JDialog {
                 JOptionPane.showMessageDialog(this, "Passwords do not match.", "Setup", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-
+            
             boolean saved = accountService.registerOrUpdate(username, password);
             if (!saved) {
                 JOptionPane.showMessageDialog(this, "Unable to save account.", "Setup", JOptionPane.ERROR_MESSAGE);
@@ -542,14 +550,6 @@ public class LoginDialog extends JDialog {
         }
     }
 
-    private void seedEmployeeAccounts() {
-        try {
-            EmployeeRepository repo = new DbEmployeeRepository();
-            BulkAccountGenerator.generateAccounts(repo);
-        } catch (Exception ex) {
-            System.out.println("Unable to seed employee accounts: " + ex.getMessage());
-        }
-    }
 
 
     public String getUsername() {

@@ -5,6 +5,8 @@
 
 package model;
 
+import java.time.OffsetDateTime;
+
 public class Leave implements LeaveRequest {
 
     private int leaveId;
@@ -14,12 +16,14 @@ public class Leave implements LeaveRequest {
     private String endDate;
     private String notes;
     private String status;
+    private String reviewedBy;
+    private OffsetDateTime createdAt;
 
     public Leave() {
     }
 
     public Leave(int leaveId, String employeeId, String leaveType,
-                 String startDate, String endDate, String notes, String status) {
+                 String startDate, String endDate, String notes, String status, String reviewedBy, OffsetDateTime createdAt) {
         this.leaveId = leaveId;
         this.employeeId = employeeId;
         this.leaveType = leaveType;
@@ -27,6 +31,8 @@ public class Leave implements LeaveRequest {
         this.endDate = endDate;
         this.notes = notes;
         this.status = status;
+        this.reviewedBy = reviewedBy;
+        this.createdAt = createdAt;
     }
 
     @Override
@@ -91,4 +97,23 @@ public class Leave implements LeaveRequest {
     public void setStatus(String status) {
         this.status = status == null ? "" : status.trim();
     }
+
+    @Override
+    public String getReviewedBy() {
+        return reviewedBy;
+    }
+
+    public void setReviewedBy(String reviewedBy) {
+        this.reviewedBy = reviewedBy;
+    }
+
+    @Override
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(OffsetDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+    
 }

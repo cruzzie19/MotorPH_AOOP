@@ -6,12 +6,18 @@
 package service;
 
 import model.Leave;
+import model.Employee;
 import repository.LeaveRepository;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+
+
+
+import java.io.IOException;
+import repository.DbLeaveRepository;
 
 public class LeaveService {
 
@@ -23,11 +29,11 @@ public class LeaveService {
         this.repo = repo;
     }
 
-    public List<Leave> getAll() {
+    public List<Leave> getAll()  throws IOException {
         return repo.findAll();
     }
 
-    public List<Leave> getByEmployeeId(String employeeId) {
+    public List<Leave> getByEmployeeId(String employeeId)  throws IOException {
         List<Leave> all = repo.findAll();
         List<Leave> filtered = new ArrayList<>();
         for (Leave l : all) {
@@ -38,19 +44,21 @@ public class LeaveService {
         return filtered;
     }
 
-    public void requestLeave(Leave leave) {
+    public void requestLeave(Leave leave) throws IOException {
         validateLeave(leave);
         validateAnnualLeaveLimit(leave, false);
         repo.add(leave);
     }
 
-    public void updateLeave(Leave leave) {
+    public void updateLeave(Leave leave, Employee reviewer) throws IOException {
+        leave.setReviewedBy(reviewer.getId());
+        
         validateLeave(leave);
         validateAnnualLeaveLimit(leave, true);
         repo.update(leave);
     }
 
-    public void updateOwnPendingLeave(Leave leave, String employeeId) {
+    public void updateOwnPendingLeave(Leave leave, String employeeId) throws IOException {
         if (!leave.getEmployeeId().equals(employeeId)) {
             throw new IllegalArgumentException("You can only update your own leave.");
         }
@@ -61,7 +69,7 @@ public class LeaveService {
         repo.update(leave);
     }
 
-    public void deleteOwnPendingLeave(int leaveId, String employeeId) {
+    public void deleteOwnPendingLeave(int leaveId, String employeeId) throws IOException {
         repo.delete(leaveId);
     }
 
@@ -73,7 +81,7 @@ public class LeaveService {
         }
     }
 
-    private void validateAnnualLeaveLimit(Leave targetLeave, boolean excludeCurrentRecord) {
+    private void validateAnnualLeaveLimit(Leave targetLeave, boolean excludeCurrentRecord)  throws IOException {
         if (targetLeave == null) {
             return;
         }
@@ -145,5 +153,9 @@ public class LeaveService {
 
     private long countInclusiveDays(LocalDate start, LocalDate end) {
         return ChronoUnit.DAYS.between(start, end) + 1;
+    }
+    
+    public static LeaveService createDefault() {
+        return new LeaveService(new DbLeaveRepository());
     }
 }

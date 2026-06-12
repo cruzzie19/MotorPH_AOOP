@@ -5,146 +5,117 @@
 
 package service.auth;
 
+import model.CredentialRecord;
 import model.Employee;
+import repository.CredentialRepository;
 import repository.EmployeeRepository;
+import service.EmployeeService;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.Arrays;
+import java.sql.SQLException;
+
+
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import repository.DbCredentialRepository;
+import repository.DbEmployeeRepository;
 
 public class AccountService {
 
-    private static final DateTimeFormatter BIRTHDAY_FORMAT =
-            DateTimeFormatter.ofPattern("M/d/yyyy");
-
     private final PasswordManager passwordManager;
+    private final CredentialRepository credentialRepository;
     private final EmployeeRepository employeeRepository;
+    private final EmployeeService employeeService;
 
-    public AccountService(EmployeeRepository employeeRepository) {
+    public AccountService(CredentialRepository credentialRepository, EmployeeRepository employeeRepository) {
         this.passwordManager = new PasswordManager();
+        this.credentialRepository = credentialRepository;
+        
         this.employeeRepository = employeeRepository;
-    }
-
-    public boolean hasAccounts() {
-        try {
-            return passwordManager.hasAccounts();
-        } catch (IOException e) {
-            return false;
-        }
+        this.employeeService = new EmployeeService(employeeRepository);
     }
 
     public boolean registerOrUpdate(String username, char[] password) {
+        if (password == null || password.length == 0) {
+            throw new IllegalArgumentException("Employee ID and password cannot be empty.");
+        }
+        
+        Employee validEmployee = employeeService.findById(username);
+        if (validEmployee == null) {
+            throw new IllegalArgumentException("Registration failed: Employee ID does not exist in company records.");
+        }
+        
+        try{
+            OffsetDateTime currentTimestamp = OffsetDateTime.now();
 
-        try {
-            passwordManager.upsertAccount(username, password);
+            byte[] newSalt = passwordManager.generateSalt();
+            byte[] newHash = passwordManager.hashPassword(password, newSalt);
+            credentialRepository.upsert(username, newHash, newSalt, currentTimestamp);
+            
             return true;
-        } catch (IOException | IllegalArgumentException e) {
-            return false;
-        } finally {
-            if (password != null) {
-                Arrays.fill(password, '\0');
-            }
-        }
-    }
-
-    public boolean validate(String username, char[] password) {
-
-        try {
-            return passwordManager.validate(username, password);
-        } catch (IOException e) {
+        } catch (IOException e){
             return false;
         }
+        
     }
-
-    public boolean changePassword(String username,
-                                  char[] oldPassword,
-                                  char[] newPassword) {
-
-        try {
-            return passwordManager.changePassword(username, oldPassword, newPassword);
-        } catch (IOException e) {
+    
+    public boolean validate(String username, String password) throws IOException,SQLException {
+        CredentialRecord record = credentialRepository.findByUsername(username);
+        
+        if (record==null){
             return false;
-        } finally {
-
-            if (oldPassword != null) Arrays.fill(oldPassword, '\0');
-            if (newPassword != null) Arrays.fill(newPassword, '\0');
         }
+        
+        return passwordManager.verifyPassword(password.toCharArray(), record.getPasswordSalt(), record.getPasswordHash());
     }
-
-    public boolean registerEmployeeAccount(String employeeId,
-                                           String birthDateText,
-                                           char[] password) {
-
-        try {
-
-            if (employeeId == null || employeeId.trim().isEmpty()
-                    || birthDateText == null || birthDateText.trim().isEmpty()
-                    || password == null || password.length == 0) {
-                return false;
-            }
-
-            LocalDate birthDate;
-
-            try {
-                birthDate = LocalDate.parse(birthDateText.trim(), BIRTHDAY_FORMAT);
-            } catch (DateTimeParseException ex) {
-                return false;
-            }
-
-            List<Employee> employees = employeeRepository.loadAll();
-
-            for (Employee employee : employees) {
-
-                if (employeeId.trim().equals(employee.getId())
-                        && birthDate.equals(employee.getBirthDate())) {
-
-                    passwordManager.upsertAccount(employeeId.trim(), password);
-                    return true;
-                }
-            }
-
-            return false;
-
-        } catch (IOException | IllegalArgumentException e) {
-            return false;
-        } finally {
-
-            if (password != null) Arrays.fill(password, '\0');
-        }
-    }
-
+    
     public Employee findEmployeeByUsername(String username) {
-
-        if (username == null || username.trim().isEmpty()) {
-            return null;
-        }
-
+        return employeeService.findById(username);
+    }
+    
+    public CredentialRecord findByUsername(String username) throws SQLException{        
+        return credentialRepository.findByUsername(username);
+    }
+    
+    public boolean hasAccounts() throws SQLException{
+        return credentialRepository.hasAccounts();
+    }
+    
+    public List<CredentialRecord> retrieveAll() throws IOException {
         try {
+            List<Employee> allEmployees = employeeRepository.loadAll();
+            List<CredentialRecord> credentialRecords = credentialRepository.retrieveAll();
 
-            List<Employee> employees = employeeRepository.loadAll();
+            Map<String, CredentialRecord> credMap = new HashMap<>();
+            for (CredentialRecord cred : credentialRecords) {
+                credMap.put(cred.getUsername().toLowerCase(), cred);
+            }
 
-            for (Employee employee : employees) {
+            List<CredentialRecord> combinedList = new ArrayList<>();
 
-                if (username.trim().equalsIgnoreCase(employee.getId())) {
-                    return employee;
+            for (Employee emp : allEmployees) {
+                String empId = emp.getId();
+                CredentialRecord match = credMap.get(empId.toLowerCase());
+
+                if (match != null) {
+                    combinedList.add(match);
+                } else {
+                    combinedList.add(new CredentialRecord(empId, null, null, null));
                 }
             }
 
-        } catch (IOException e) {
-            return null;
+            return combinedList;
+        
+        } catch (SQLException ex) {
+            throw new IOException("Failed to cross-reference system credential records.", ex);
         }
-
-        return null;
     }
     
     public static AccountService createDefault() {
-
-        repository.DbEmployeeRepository repo =
-            new repository.DbEmployeeRepository();
-
-        return new AccountService(repo);
+        return new AccountService(new DbCredentialRepository(), new DbEmployeeRepository());
     }
+
 }

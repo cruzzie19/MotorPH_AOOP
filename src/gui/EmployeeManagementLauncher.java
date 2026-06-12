@@ -17,15 +17,6 @@ public class EmployeeManagementLauncher {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
 
-            try {
-                EmployeeRepository repo = new DbEmployeeRepository();
-                BulkAccountGenerator.generateAccounts(repo);
-
-                System.out.println("Employee accounts generated.");
-
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
 
             JFrame dummy = new JFrame();
             dummy.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);

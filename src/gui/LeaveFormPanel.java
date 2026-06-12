@@ -122,8 +122,8 @@ public class LeaveFormPanel extends JPanel {
         left.setOpaque(false);
         left.setLayout(new BoxLayout(left, BoxLayout.Y_AXIS));
 
-        left.add(createFieldBlock("Employee ID", txtEmployeeId));
-        left.add(Box.createVerticalStrut(22));
+        //left.add(createFieldBlock("Employee ID", txtEmployeeId));
+        //left.add(Box.createVerticalStrut(22));
         left.add(createFieldBlock("Start Date", dcStartDate));
         left.add(Box.createVerticalStrut(22));
         left.add(createFieldBlock("End Date", dcEndDate));

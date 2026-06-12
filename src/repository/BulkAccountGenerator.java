@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.List;
 
 public class BulkAccountGenerator {
-
+/*
     public static void generateAccounts(EmployeeRepository repo) throws IOException {
 
         AccountService accountService = new AccountService(repo);
@@ -38,10 +38,11 @@ public class BulkAccountGenerator {
 
             accountService.registerOrUpdate(empId, password.toCharArray());
 
-            System.out.println("Created account -> Username: "
-                    + empId + " | Password: " + password);
+            //System.out.println("Created account -> Username: " + empId + " | Password: " + password);
         }
 
         System.out.println("All employee accounts created.");
     }
+        
+        */
 }

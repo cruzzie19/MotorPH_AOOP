@@ -192,9 +192,9 @@ public class EmployeeService {
         employee.setPhilHealthNumber(request.getPhilHealthNumber());
         employee.setTinNumber(request.getTinNumber());
         employee.setPagIbigNumber(request.getPagIbigNumber());
-        employee.setStatus(request.getStatus());
+        employee.setStatus(resolveStatus(request.getStatus()));
         employee.setPosition(request.getPosition());
-        employee.setSupervisor(request.getSupervisor());
+        employee.setSupervisor(resolveSupervisorId(request.getSupervisor(), request.getId()));
         employee.setRole(resolveRole(request.getRoleName()));
 
         return employee;
@@ -207,11 +207,31 @@ public class EmployeeService {
         }
         return role;
     }
+    
+    private String resolveStatus(String statusInput) {
+        if (!(statusInput.equals("Probationary")) && !(statusInput.equals("Regular"))) {
+            throw new IllegalArgumentException("Invalid status: " + statusInput);
+        }
+        return statusInput;
+    }
+    
+    private String resolveSupervisorId(String supervisorInput, String employeeId) {
+        if (supervisorInput == null || supervisorInput.isEmpty()) {
+            return null;
+        }
+        
+        if (this.findById(supervisorInput) == null) { 
+            throw new IllegalArgumentException("Invalid supervisor ID.");
+        }
+            
+        return supervisorInput;
+    }
 
     private void saveAll(List<Employee> employees) {
         try {
             repository.saveAll(employees);
         } catch (IOException e) {
+            e.printStackTrace();
             throw new RuntimeException("Failed to save employee records.", e);
         }
     }

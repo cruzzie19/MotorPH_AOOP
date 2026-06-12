@@ -8,6 +8,8 @@
  */
 package model;
 
+import java.time.OffsetDateTime;
+
 public interface LeaveRequest {
     int getLeaveId();
     String getEmployeeId();
@@ -16,4 +18,6 @@ public interface LeaveRequest {
     String getEndDate();
     String getNotes();
     String getStatus();
+    String getReviewedBy();
+    OffsetDateTime getCreatedAt();
 }

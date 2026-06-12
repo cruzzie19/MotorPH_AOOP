@@ -15,7 +15,6 @@ import model.Employee;
 import RBAC.Permission;
 
 import repository.EmployeeRepository;
-import repository.CsvLeaveRepository;
 
 import service.AuthorizationService;
 import service.LeaveService;
@@ -32,6 +31,7 @@ public class MainDashboardFrame extends JFrame {
     private static final String CARD_PAYROLL = "payroll";
     private static final String CARD_LEAVE = "leave";
     private static final String CARD_ATTENDANCE = "attendance";
+    private static final String CARD_CREDENTIAL = "credential";
 
     private static final Color SIDEBAR_BG = Color.BLACK;
     private static final Color MAIN_BG = new Color(242, 242, 242);
@@ -59,7 +59,7 @@ public class MainDashboardFrame extends JFrame {
                 ? SessionManager.getCurrentUser()
                 : loggedInEmployee;
 
-        this.leaveService = new LeaveService(new CsvLeaveRepository());
+        this.leaveService = LeaveService.createDefault();
 
         this.currentUserId = currentUser != null ? safe(currentUser.getId()) : "";
         this.currentUserName = currentUser != null
@@ -141,7 +141,12 @@ public class MainDashboardFrame extends JFrame {
         topSection.add(createNavLink("Leave", () -> showCard(CARD_LEAVE)));
         topSection.add(Box.createVerticalStrut(22));
         topSection.add(createNavLink("Attendance", () -> showCard(CARD_ATTENDANCE)));
+        topSection.add(Box.createVerticalStrut(22));
 
+        if (AuthorizationService.hasPermission(currentUser, Permission.ACCESS_SYSTEM_TOOLS)) {
+            topSection.add(createNavLink("Credential", () -> showCard(CARD_CREDENTIAL)));
+        }
+        
         JPanel bottomSection = new JPanel();
         bottomSection.setOpaque(false);
         bottomSection.setLayout(new BoxLayout(bottomSection, BoxLayout.Y_AXIS));
@@ -249,6 +254,7 @@ public class MainDashboardFrame extends JFrame {
         addCard(CARD_PAYROLL, createPayrollCard());
         addCard(CARD_LEAVE, createLeaveCard());
         addCard(CARD_ATTENDANCE, createAttendanceCard());
+        addCard(CARD_CREDENTIAL, createCredentialCard());
     }
 
     private void addCard(String cardName, JPanel panel) {
@@ -280,6 +286,10 @@ public class MainDashboardFrame extends JFrame {
 
     private JPanel createAttendanceCard() {
         return new AttendancePanel();
+    }
+    
+    private JPanel createCredentialCard() {
+        return new CredentialPanel();
     }
 
     private void showCard(String cardName) {

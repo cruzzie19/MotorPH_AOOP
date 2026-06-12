@@ -146,7 +146,7 @@ public class EmployeeLeavesPanel extends JPanel {
             leftActions.add(btnMyRecords);
             leftActions.add(btnViewAll);
         }
-
+        
         rightActions.add(btnAdd);
         rightActions.add(btnUpdate);
         rightActions.add(btnDelete);
@@ -285,7 +285,7 @@ public class EmployeeLeavesPanel extends JPanel {
         });
     }
 
-    private JPanel buildFormPage() {
+    private JPanel buildFormPage(){
         formPanel = new LeaveFormPanel();
         formPanel.addBackListener(e -> showListPage());
         formPanel.addSubmitListener(e -> submitForm());
@@ -326,74 +326,78 @@ public class EmployeeLeavesPanel extends JPanel {
     }
 
     private void openUpdateForm() {
-        int row = table.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Please select a leave request first.");
-            return;
-        }
+        try{
+            int row = table.getSelectedRow();
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a leave request first.");
+                return;
+            }
 
-        int leaveId = getSelectedLeaveId(row);
-        if (leaveId < 0) {
-            JOptionPane.showMessageDialog(this, "Selected leave request was not found.");
-            return;
-        }
+            int leaveId = getSelectedLeaveId(row);
+            if (leaveId < 0) {
+                JOptionPane.showMessageDialog(this, "Selected leave request was not found.");
+                return;
+            }
 
-        Leave selected = findSelectedLeave(leaveId);
+            Leave selected = findSelectedLeave(leaveId);
 
-        if (selected == null) {
-            JOptionPane.showMessageDialog(this, "Selected leave request was not found.");
-            return;
-        }
+            if (selected == null) {
+                JOptionPane.showMessageDialog(this, "Selected leave request was not found.");
+                return;
+            }
 
-        boolean ownRecord = currentEmployeeId.equals(selected.getEmployeeId());
+            boolean ownRecord = currentEmployeeId.equals(selected.getEmployeeId());
 
-        if (isHrUser() && showAllRecords && !ownRecord) {
-            editMode = false;
-            hrReviewMode = true;
+            if (isHrUser() && showAllRecords && !ownRecord) {
+                editMode = false;
+                hrReviewMode = true;
+                workingLeave = selected;
+
+                formPanel.setEmployeeFieldEditable(false);
+                formPanel.setEmployeeIdValue(selected.getEmployeeId());
+                formPanel.setManagerEntryMode(false);
+                formPanel.setFormMode(false);
+                formPanel.setHrReviewMode(true);
+                formPanel.setLeaveData(workingLeave);
+
+                cardLayout.show(contentPanel, FORM_CARD);
+                return;
+            }
+
+            if (!ownRecord) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "You can only update your own leave request here.",
+                        "Action Not Allowed",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return;
+            }
+
+            if (!"Pending".equalsIgnoreCase(selected.getStatus())) {
+                JOptionPane.showMessageDialog(this, "Only pending leave requests can be updated.");
+                return;
+            }
+
+            editMode = true;
+            hrReviewMode = false;
             workingLeave = selected;
+            workingLeave.setStatus("Pending");
 
             formPanel.setEmployeeFieldEditable(false);
             formPanel.setEmployeeIdValue(selected.getEmployeeId());
             formPanel.setManagerEntryMode(false);
-            formPanel.setFormMode(false);
-            formPanel.setHrReviewMode(true);
+            formPanel.setFormMode(true);
+            formPanel.setHrReviewMode(false);
             formPanel.setLeaveData(workingLeave);
 
             cardLayout.show(contentPanel, FORM_CARD);
-            return;
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "System Error", JOptionPane.ERROR_MESSAGE);
         }
-
-        if (!ownRecord) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "You can only update your own leave request here.",
-                    "Action Not Allowed",
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
-        }
-
-        if (!"Pending".equalsIgnoreCase(selected.getStatus())) {
-            JOptionPane.showMessageDialog(this, "Only pending leave requests can be updated.");
-            return;
-        }
-
-        editMode = true;
-        hrReviewMode = false;
-        workingLeave = selected;
-        workingLeave.setStatus("Pending");
-
-        formPanel.setEmployeeFieldEditable(false);
-        formPanel.setEmployeeIdValue(selected.getEmployeeId());
-        formPanel.setManagerEntryMode(false);
-        formPanel.setFormMode(true);
-        formPanel.setHrReviewMode(false);
-        formPanel.setLeaveData(workingLeave);
-
-        cardLayout.show(contentPanel, FORM_CARD);
     }
 
-    private void submitForm() {
+    private void submitForm(){
         if (workingLeave == null) {
             return;
         }
@@ -404,7 +408,7 @@ public class EmployeeLeavesPanel extends JPanel {
             boolean ownRecord = currentEmployeeId.equals(workingLeave.getEmployeeId());
 
             if (hrReviewMode && isHrUser() && !ownRecord) {
-                leaveService.updateLeave(workingLeave);
+                leaveService.updateLeave(workingLeave,currentUser);
                 JOptionPane.showMessageDialog(this, "Leave record updated successfully.");
             } else if (editMode) {
                 workingLeave.setEmployeeId(currentEmployeeId);
@@ -430,17 +434,14 @@ public class EmployeeLeavesPanel extends JPanel {
             hrReviewMode = false;
             showListPage();
 
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "System Error", JOptionPane.ERROR_MESSAGE);
         } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    ex.getMessage(),
-                    "Validation Error",
-                    JOptionPane.ERROR_MESSAGE
-            );
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "System Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void showListPage() {
+    private void showListPage(){
         editMode = false;
         hrReviewMode = false;
         loadLeaveRequests();
@@ -448,35 +449,39 @@ public class EmployeeLeavesPanel extends JPanel {
         cardLayout.show(contentPanel, LIST_CARD);
     }
 
-    private void loadLeaveRequests() {
-        if (model == null) {
-            return;
+    private void loadLeaveRequests(){
+        try{
+            if (model == null) {
+                return;
+            }
+
+            model.setRowCount(0);
+
+            List<Leave> leaves = getDisplayedLeaves();
+
+            for (Leave leave : leaves) {
+                model.addRow(new Object[]{
+                        leave.getLeaveId(),
+                        leave.getEmployeeId(),
+                        leave.getLeaveType(),
+                        leave.getStartDate(),
+                        leave.getEndDate(),
+                        leave.getNotes(),
+                        leave.getStatus()
+                });
+            }
+
+            if (infoLabel != null) {
+                infoLabel.setText(model.getRowCount() + " leave record(s) loaded.");
+            }
+
+            refreshEmptyState();
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "System Error", JOptionPane.ERROR_MESSAGE);
         }
-
-        model.setRowCount(0);
-
-        List<Leave> leaves = getDisplayedLeaves();
-
-        for (Leave leave : leaves) {
-            model.addRow(new Object[]{
-                    leave.getLeaveId(),
-                    leave.getEmployeeId(),
-                    leave.getLeaveType(),
-                    leave.getStartDate(),
-                    leave.getEndDate(),
-                    leave.getNotes(),
-                    leave.getStatus()
-            });
-        }
-
-        if (infoLabel != null) {
-            infoLabel.setText(model.getRowCount() + " leave record(s) loaded.");
-        }
-
-        refreshEmptyState();
     }
 
-    private List<Leave> getDisplayedLeaves() {
+    private List<Leave> getDisplayedLeaves() throws IOException{
         if (isHrUser()) {
             if (showAllRecords) {
                 return leaveService.getAll();
@@ -530,74 +535,76 @@ public class EmployeeLeavesPanel extends JPanel {
         }
     }
 
-    private void onDelete() {
+    private void onDelete(){
         int row = table.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Please select a leave request first.");
-            return;
-        }
+            if (row < 0) {
+                JOptionPane.showMessageDialog(this, "Please select a leave request first.");
+                return;
+            }
 
-        int leaveId = getSelectedLeaveId(row);
-        if (leaveId < 0) {
-            JOptionPane.showMessageDialog(this, "Selected leave request was not found.");
-            return;
-        }
+            int leaveId = getSelectedLeaveId(row);
+            if (leaveId < 0) {
+                JOptionPane.showMessageDialog(this, "Selected leave request was not found.");
+                return;
+            }
 
-        Leave selected = findSelectedLeave(leaveId);
+        try{
+            Leave selected = findSelectedLeave(leaveId);
 
-        if (selected == null) {
-            JOptionPane.showMessageDialog(this, "Selected leave request was not found.");
-            return;
-        }
+            if (selected == null) {
+                JOptionPane.showMessageDialog(this, "Selected leave request was not found.");
+                return;
+            }
 
-        boolean ownRecord = currentEmployeeId.equals(selected.getEmployeeId());
+            boolean ownRecord = currentEmployeeId.equals(selected.getEmployeeId());
 
-        if (isHrUser() && !ownRecord) {
-            JOptionPane.showMessageDialog(
+            if (isHrUser() && !ownRecord) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "HR cannot delete another employee's leave record.",
+                        "Action Not Allowed",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return;
+            }
+
+            if (!ownRecord) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "You can only delete your own leave requests.",
+                        "Action Not Allowed",
+                        JOptionPane.WARNING_MESSAGE
+                );
+                return;
+            }
+
+            if (!"Pending".equalsIgnoreCase(selected.getStatus())) {
+                JOptionPane.showMessageDialog(this, "Only pending leave requests can be deleted.");
+                return;
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(
                     this,
-                    "HR cannot delete another employee's leave record.",
-                    "Action Not Allowed",
-                    JOptionPane.WARNING_MESSAGE
+                    "Delete this leave request?",
+                    "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION
             );
-            return;
-        }
 
-        if (!ownRecord) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "You can only delete your own leave requests.",
-                    "Action Not Allowed",
-                    JOptionPane.WARNING_MESSAGE
-            );
-            return;
-        }
-
-        if (!"Pending".equalsIgnoreCase(selected.getStatus())) {
-            JOptionPane.showMessageDialog(this, "Only pending leave requests can be deleted.");
-            return;
-        }
-
-        int confirm = JOptionPane.showConfirmDialog(
-                this,
-                "Delete this leave request?",
-                "Confirm Delete",
-                JOptionPane.YES_NO_OPTION
-        );
-
-        if (confirm != JOptionPane.YES_OPTION) {
-            return;
-        }
-
-        try {
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
+            }
+            
             leaveService.deleteOwnPendingLeave(leaveId, currentEmployeeId);
             loadLeaveRequests();
             JOptionPane.showMessageDialog(this, "Leave request deleted successfully.");
-        } catch (IllegalArgumentException ex) {
+            
+        } catch (IOException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Delete Error", JOptionPane.ERROR_MESSAGE);
+        
         }
     }
 
-    private Leave findSelectedLeave(int leaveId) {
+    private Leave findSelectedLeave(int leaveId) throws IOException{
         List<Leave> leaves = getDisplayedLeaves();
 
         for (Leave leave : leaves) {
@@ -623,13 +630,8 @@ public class EmployeeLeavesPanel extends JPanel {
                 }
             }
             return false;
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Unable to validate Employee ID: " + e.getMessage(),
-                    "Validation Error",
-                    JOptionPane.ERROR_MESSAGE
-            );
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "System Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
     }
@@ -689,4 +691,5 @@ public class EmployeeLeavesPanel extends JPanel {
                 && currentUser.getRole() != null
                 && "HR".equalsIgnoreCase(currentUser.getRole().getName());
     }
+    
 }

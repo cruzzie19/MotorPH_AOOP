@@ -1,29 +1,44 @@
-/**
- *
- * @author Leianna Cruz
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-
 package gui;
 
-import model.AttendanceRecord;
-import model.Employee;
-import repository.CsvAttendanceRepository;
-import service.AttendanceService;
-import service.SessionManager;
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.util.Arrays;
+import java.util.List;
 
-import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import java.awt.*;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.util.List;
+import model.Employee;
+import service.SessionManager;
+import model.CredentialRecord;
+import repository.CredentialRepository;
+import repository.EmployeeRepository;
+import service.auth.AccountService;
 
-public class AttendancePanel extends JPanel {
+import javax.swing.*;
 
+import javax.swing.event.MouseInputAdapter;
+
+/**
+ *
+ * @author Elizabeth
+ */
+public class CredentialPanel extends JPanel{
+    
     private static final String LIST_CARD = "LIST";
     private static final String FORM_CARD = "FORM";
 
@@ -41,40 +56,39 @@ public class AttendancePanel extends JPanel {
 
     private static final Color BLACK = Color.BLACK;
     private static final Color WHITE = Color.WHITE;
+    
+    private static final Color MAIN_BLUE = new Color(0, 102, 204); 
+    private static final Color HOVER_BLUE = new Color(0, 82, 163);
 
     private static final String SEARCH_PLACEHOLDER = "Employee ID";
 
-    private final AttendanceService attendanceService;
+    private final AccountService accountService;
     private final Employee currentUser;
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentPanel = new JPanel(cardLayout);
 
+    private JButton btnRefresh;
+    
     private JTable table;
     private DefaultTableModel model;
     private JScrollPane tableScrollPane;
     private JLabel emptyStateLabel;
     private JLabel infoLabel;
 
-    private JButton btnUpdate;
-    private JButton btnDelete;
-    private JButton btnTimeIn;
-    private JButton btnTimeOut;
-    private JButton btnRefresh;
-    private JButton btnViewAll;
-    private JButton btnViewMine;
+    private int hoveredRow = -1;
 
-    private JTextField txtEmployeeFilter;
-
-    private AttendanceFormPanel formPanel;
-    private AttendanceRecord selectedRecordForUpdate;
-
-    public AttendancePanel() {
-        this(new AttendanceService(new CsvAttendanceRepository()));
+    public CredentialPanel() {
+        this(AccountService.createDefault(), null, null);
     }
-
-    public AttendancePanel(AttendanceService attendanceService) {
-        this.attendanceService = attendanceService;
+    
+    public CredentialPanel(AccountService accountService, CredentialRepository credRepo, EmployeeRepository empRepo) {
+        if (accountService != null) {
+            this.accountService = accountService;
+        } else {
+            this.accountService = new AccountService(credRepo, empRepo);
+        }
+        
         this.currentUser = SessionManager.getCurrentUser();
 
         setLayout(new BorderLayout());
@@ -84,11 +98,10 @@ public class AttendancePanel extends JPanel {
 
         contentPanel.setOpaque(false);
         contentPanel.add(buildListPage(), LIST_CARD);
-        contentPanel.add(buildFormPage(), FORM_CARD);
 
         add(contentPanel, BorderLayout.CENTER);
 
-        loadAttendanceHistory();
+        loadEmployeesCredentialOptions();
         showListPage();
     }
 
@@ -106,67 +119,24 @@ public class AttendancePanel extends JPanel {
         top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
         top.setBorder(new EmptyBorder(0, 0, 0, 0));
 
-        boolean canViewBroader = attendanceService.canViewBroaderAttendance(currentUser);
-        boolean canUpdateAny = attendanceService.canUpdateAnyAttendance(currentUser);
+        JPanel searchRow = new JPanel(new BorderLayout());
+        searchRow.setOpaque(false);
 
-        if (canViewBroader) {
-            JPanel searchRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            searchRow.setOpaque(false);
+        //txtEmployeeFilter = createSearchField();
+        //txtEmployeeFilter.addActionListener(e -> refresh());
 
-            txtEmployeeFilter = createSearchField();
-            txtEmployeeFilter.addActionListener(e -> refreshBasedOnRole());
+        //searchRow.add(txtEmployeeFilter, BorderLayout.WEST);
 
-            searchRow.add(txtEmployeeFilter);
-            
-            top.add(searchRow);
-            top.add(Box.createVerticalStrut(12));
-        }
+        top.add(searchRow);
+        top.add(Box.createVerticalStrut(12));
 
-        JPanel buttonRow = new JPanel(new BorderLayout());
-        buttonRow.setOpaque(false);
-
-        JPanel leftButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        leftButtons.setOpaque(false);
-
-        JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        rightButtons.setOpaque(false);
-
-        if (canViewBroader) {
-            btnViewMine = createBlackButton("My Records");
-            btnViewAll = createBlackButton("View All");
-
-            btnViewMine.addActionListener(e -> loadMyAttendanceHistory());
-            btnViewAll.addActionListener(e -> loadAttendanceHistory());
-
-            leftButtons.add(btnViewMine);
-            leftButtons.add(btnViewAll);
-        }
-
-        btnUpdate = createBlackButton("Update");
-        btnDelete = createBlackButton("Delete");
-        btnTimeIn = createBlackButton("Time In");
-        btnTimeOut = createBlackButton("Time Out");
+        
         btnRefresh = createWhiteButton("Refresh");
+        btnRefresh.addActionListener(e -> refresh());
 
-        if (canUpdateAny) {
-            rightButtons.add(btnUpdate);
-            rightButtons.add(btnDelete);
-        }
-
-        rightButtons.add(btnTimeIn);
-        rightButtons.add(btnTimeOut);
-        rightButtons.add(btnRefresh);
-
-        btnUpdate.addActionListener(e -> openUpdateForm());
-        btnDelete.addActionListener(e -> deleteSelectedAttendance());
-        btnTimeIn.addActionListener(e -> handleTimeIn());
-        btnTimeOut.addActionListener(e -> handleTimeOut());
-        btnRefresh.addActionListener(e -> refreshBasedOnRole());
-
-        buttonRow.add(leftButtons, BorderLayout.WEST);
-        buttonRow.add(rightButtons, BorderLayout.EAST);
-
-        top.add(buttonRow);
+        searchRow.add(btnRefresh, BorderLayout.EAST);
+        
+        top.add(searchRow);
 
         return top;
     }
@@ -180,7 +150,7 @@ public class AttendancePanel extends JPanel {
         ));
 
         model = new DefaultTableModel(
-                new Object[]{"Employee ID", "Date", "Time In", "Time Out"}, 0
+                new Object[]{"Employee ID", "Last Password Change", "Reset Password"}, 0
         ) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -192,16 +162,17 @@ public class AttendancePanel extends JPanel {
         styleTable();
 
         table.getColumnModel().getColumn(0).setPreferredWidth(180);
-        table.getColumnModel().getColumn(1).setPreferredWidth(210);
-        table.getColumnModel().getColumn(2).setPreferredWidth(180);
-        table.getColumnModel().getColumn(3).setPreferredWidth(180);
+        table.getColumnModel().getColumn(1).setPreferredWidth(300);
+        table.getColumnModel().getColumn(2).setPreferredWidth(140);
+        
+        setupInlineButtonColumn();
 
         tableScrollPane = new JScrollPane(table);
         tableScrollPane.setBorder(BorderFactory.createEmptyBorder());
         tableScrollPane.getViewport().setBackground(TABLE_ROW_EVEN);
         tableScrollPane.setBackground(WHITE);
 
-        emptyStateLabel = new JLabel("No attendance history found.", SwingConstants.CENTER);
+        emptyStateLabel = new JLabel("No credential records found.", SwingConstants.CENTER);
         emptyStateLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         emptyStateLabel.setForeground(MUTED_TEXT);
         emptyStateLabel.setOpaque(true);
@@ -290,207 +261,195 @@ public class AttendancePanel extends JPanel {
         });
     }
 
-    private JPanel buildFormPage() {
-        formPanel = new AttendanceFormPanel();
-        formPanel.addBackListener(e -> showListPage());
-        formPanel.addSubmitListener(e -> submitUpdateForm());
+    private void setupInlineButtonColumn() {
+        table.getColumnModel().getColumn(2).setCellRenderer(new DefaultTableCellRenderer() {
+            private final JButton buttonBase = createBlueButton("");
 
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setOpaque(false);
-        wrapper.add(formPanel, BorderLayout.CENTER);
-        return wrapper;
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                buttonBase.setText(value != null ? value.toString() : "");
+
+                if (row == hoveredRow) {
+                    buttonBase.setBackground(HOVER_BLUE);
+                } else {
+                    buttonBase.setBackground(MAIN_BLUE);
+                }
+
+                return buttonBase;
+            }
+        });
+        
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int column = table.columnAtPoint(e.getPoint());
+                int row = table.rowAtPoint(e.getPoint());
+
+                if (column == 2 && row != -1) {
+                    String targetEmployeeId = table.getValueAt(row, 0).toString();
+                    showChangePasswordDialog(targetEmployeeId);
+                }
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                if (hoveredRow != -1) {
+                    hoveredRow = -1;
+                    table.repaint();
+                    table.setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        });
+        
+        MouseInputAdapter trackHover = new MouseInputAdapter() {
+            @Override
+            public void mouseMoved(java.awt.event.MouseEvent e) {
+                int column = table.columnAtPoint(e.getPoint());
+                int row = table.rowAtPoint(e.getPoint());
+
+                int oldHoveredRow = hoveredRow;
+
+                if (column == 2 && row != -1) {
+                    hoveredRow = row;
+                    table.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+                } else {
+                    hoveredRow = -1;
+                    table.setCursor(Cursor.getDefaultCursor());
+                }
+
+                if (hoveredRow != oldHoveredRow) {
+                    table.repaint();
+                }
+            }
+        };
+        
+        table.addMouseMotionListener(trackHover);
     }
 
-    private void handleTimeIn() {
-        try {
-            attendanceService.timeIn(currentUser);
-            loadAttendanceHistory();
-            JOptionPane.showMessageDialog(this, "Time In recorded successfully.");
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Time In Error", JOptionPane.ERROR_MESSAGE);
+    private void loadEmployeesCredentialOptions() {
+        model.setRowCount(0);
+
+        if (currentUser == null) {
+            if (infoLabel != null) {
+                infoLabel.setText("0 credential record(s) loaded.");
+            }
+            refreshEmptyState();
+            return;
         }
+        
+        //AccountService accountService = AccountService.createDefault();
+        
+        try{
+            List<CredentialRecord> records = accountService.retrieveAll();
+            for (CredentialRecord record : records) {
+            model.addRow(new Object[]{
+                record.getUsername(),
+                record.getLastPaswordChange(),
+                "Reset Password"
+            });
+        }
+        } catch(Exception ex){
+            ex.printStackTrace();
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Login failed due to a system error.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+
+        if (infoLabel != null) {
+            infoLabel.setText(model.getRowCount() + " credential record(s) loaded.");
+        }
+
+        refreshEmptyState();
     }
 
-    private void handleTimeOut() {
-        try {
-            attendanceService.timeOut(currentUser);
-            loadAttendanceHistory();
-            JOptionPane.showMessageDialog(this, "Time Out recorded successfully.");
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Time Out Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
+    private void showChangePasswordDialog(String targetEmployeeId) {
+        JLabel lblUsernameValue = new JLabel(targetEmployeeId);
+        lblUsernameValue.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblUsernameValue.setForeground(TEXT_DARK);
 
-    private void openUpdateForm() {
-        if (!attendanceService.canUpdateAnyAttendance(currentUser)) {
-            JOptionPane.showMessageDialog(this, "You do not have permission to update attendance records.");
-            return;
-        }
+        JPasswordField newPasswordField = new JPasswordField(20);
+        JPasswordField confirmPasswordField = new JPasswordField(20);
 
-        int row = table.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Please select an attendance record first.");
-            return;
-        }
+        JPanel form = new JPanel(new GridLayout(0, 1, 6, 6));
+        form.add(new JLabel("Username"));
+        form.add(lblUsernameValue);
+        form.add(new JLabel("New Password"));
+        form.add(newPasswordField);
+        form.add(new JLabel("Confirm New Password"));
+        form.add(confirmPasswordField);
 
-        String employeeId = String.valueOf(model.getValueAt(row, 0));
-        String date = String.valueOf(model.getValueAt(row, 1));
-        String timeIn = String.valueOf(model.getValueAt(row, 2));
-        String timeOut = String.valueOf(model.getValueAt(row, 3));
-
-        selectedRecordForUpdate = new AttendanceRecord();
-        selectedRecordForUpdate.setEmployeeId(employeeId);
-        selectedRecordForUpdate.setDate(date);
-        selectedRecordForUpdate.setLogIn(timeIn);
-        selectedRecordForUpdate.setLogOut(timeOut);
-
-        formPanel.setAttendanceData(employeeId, date, timeIn, timeOut);
-        formPanel.setEditableFields(false, false, true, true);
-
-        cardLayout.show(contentPanel, FORM_CARD);
-    }
-
-    private void submitUpdateForm() {
-        if (selectedRecordForUpdate == null) {
-            showListPage();
-            return;
-        }
-
-        try {
-            selectedRecordForUpdate.setLogIn(formPanel.getTimeIn());
-            selectedRecordForUpdate.setLogOut(formPanel.getTimeOut());
-
-            attendanceService.updateAttendance(currentUser, selectedRecordForUpdate);
-
-            selectedRecordForUpdate = null;
-            loadAttendanceHistory();
-            JOptionPane.showMessageDialog(this, "Attendance updated successfully.");
-            showListPage();
-
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Update Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void deleteSelectedAttendance() {
-        if (!attendanceService.canDeleteAnyAttendance(currentUser)) {
-            JOptionPane.showMessageDialog(this, "You do not have permission to delete attendance records.");
-            return;
-        }
-
-        int row = table.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Please select an attendance record first.");
-            return;
-        }
-
-        String employeeId = String.valueOf(model.getValueAt(row, 0));
-        String date = String.valueOf(model.getValueAt(row, 1));
-
-        int confirm = JOptionPane.showConfirmDialog(
+        int option = JOptionPane.showConfirmDialog(
                 this,
-                "Delete this attendance record?",
-                "Confirm Delete",
-                JOptionPane.YES_NO_OPTION
+                form,
+                "Change Password",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
         );
 
-        if (confirm != JOptionPane.YES_OPTION) {
+        if (option != JOptionPane.OK_OPTION) {
             return;
         }
+
+        char[] newPassword = newPasswordField.getPassword();
+        char[] confirmPassword = confirmPasswordField.getPassword();
 
         try {
-            attendanceService.deleteAttendance(currentUser, employeeId, date);
-            loadAttendanceHistory();
-            JOptionPane.showMessageDialog(this, "Attendance deleted successfully.");
-        } catch (IllegalArgumentException ex) {
-            JOptionPane.showMessageDialog(this, ex.getMessage(), "Delete Error", JOptionPane.ERROR_MESSAGE);
+            if (newPassword.length == 0) {
+                JOptionPane.showMessageDialog(this, "New password cannot be blank.", "Change Password", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (!Arrays.equals(newPassword, confirmPassword)) {
+                JOptionPane.showMessageDialog(this, "New passwords do not match.", "Change Password", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            //AccountService accountService = AccountService.createDefault();
+            boolean changed = accountService.registerOrUpdate(targetEmployeeId, newPassword);
+
+            if (!changed) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Failed to change the password due to system error.",
+                        "Change Password",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+
+            JOptionPane.showMessageDialog(this, "Password changed successfully.", "Change Password", JOptionPane.INFORMATION_MESSAGE);
+
+            refresh(); 
+
+        } finally {
+            Arrays.fill(newPassword, '\0');
+            Arrays.fill(confirmPassword, '\0');
         }
     }
-
-    private void loadAttendanceHistory() {
-        model.setRowCount(0);
-
+    
+    private void refresh() {
         if (currentUser == null) {
             if (infoLabel != null) {
-                infoLabel.setText("0 attendance record(s) loaded.");
+                infoLabel.setText("0 credential record(s) loaded.");
             }
             refreshEmptyState();
             return;
         }
 
-        List<AttendanceRecord> records = attendanceService.getVisibleAttendance(currentUser);
-
-        for (AttendanceRecord record : records) {
-            model.addRow(new Object[]{
-                    record.getEmployeeId(),
-                    record.getDate(),
-                    record.getLogIn(),
-                    record.getLogOut()
-            });
-        }
-
-        if (infoLabel != null) {
-            infoLabel.setText(model.getRowCount() + " attendance record(s) loaded.");
-        }
-
-        refreshEmptyState();
-    }
-
-    private void loadMyAttendanceHistory() {
-        model.setRowCount(0);
-
-        if (currentUser == null) {
-            if (infoLabel != null) {
-                infoLabel.setText("0 attendance record(s) loaded.");
-            }
-            refreshEmptyState();
-            return;
-        }
-
-        List<AttendanceRecord> records = attendanceService.getAttendanceByEmployee(currentUser.getId());
-
-        for (AttendanceRecord record : records) {
-            model.addRow(new Object[]{
-                    record.getEmployeeId(),
-                    record.getDate(),
-                    record.getLogIn(),
-                    record.getLogOut()
-            });
-        }
-
-        if (infoLabel != null) {
-            infoLabel.setText(model.getRowCount() + " attendance record(s) loaded.");
-        }
-
-        refreshEmptyState();
-    }
-
-    private void refreshBasedOnRole() {
-        if (currentUser == null) {
-            if (infoLabel != null) {
-                infoLabel.setText("0 attendance record(s) loaded.");
-            }
-            refreshEmptyState();
-            return;
-        }
-
-        if (attendanceService.canViewBroaderAttendance(currentUser)) {
-            loadAttendanceHistory();
-            return;
-        }
-
-        loadMyAttendanceHistory();
+        loadEmployeesCredentialOptions();
     }
 
     private void showListPage() {
-        selectedRecordForUpdate = null;
         cardLayout.show(contentPanel, LIST_CARD);
     }
 
-    private JButton createBlackButton(String text) {
+    private JButton createBlueButton(String text) {
         JButton button = new JButton(text);
         button.setPreferredSize(new Dimension(104, 40));
-        button.setBackground(BLACK);
+        button.setBackground(MAIN_BLUE);
         button.setForeground(WHITE);
         button.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         button.setFocusPainted(false);
@@ -555,4 +514,5 @@ public class AttendancePanel extends JPanel {
         tableScrollPane.revalidate();
         tableScrollPane.repaint();
     }
+    
 }
