@@ -9,7 +9,7 @@ import RBAC.Permission;
 import model.AttendanceRecord;
 import model.Employee;
 import repository.AttendanceRepository;
-import repository.CsvAttendanceRepository;
+import repository.DbAttendanceRepository;
 import repository.EmployeeRepository;
 import service.AuthorizationService;
 import service.PayrollComputationService;
@@ -75,7 +75,7 @@ public class PayrollPanel extends JPanel {
         this.currentUser = currentUser;
         this.employeeRepository = employeeRepository;
         this.payrollService = new PayrollComputationService();
-        this.attendanceRepository = new CsvAttendanceRepository();
+        this.attendanceRepository = new DbAttendanceRepository();
 
         setLayout(new BorderLayout());
         setOpaque(false);

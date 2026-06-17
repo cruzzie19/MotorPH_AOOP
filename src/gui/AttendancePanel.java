@@ -7,7 +7,7 @@ package gui;
 
 import model.AttendanceRecord;
 import model.Employee;
-import repository.CsvAttendanceRepository;
+import repository.DbAttendanceRepository;
 import service.AttendanceService;
 import service.SessionManager;
 
@@ -70,7 +70,7 @@ public class AttendancePanel extends JPanel {
     private AttendanceRecord selectedRecordForUpdate;
 
     public AttendancePanel() {
-        this(new AttendanceService(new CsvAttendanceRepository()));
+        this(new AttendanceService(new DbAttendanceRepository()));
     }
 
     public AttendancePanel(AttendanceService attendanceService) {
