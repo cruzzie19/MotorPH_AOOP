@@ -1,5 +1,7 @@
 -- run in terminal after motorph_schema and import_employee:
--- & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d motorph -f scripts/import_attendance.sql
+--   for windows : & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d motorph -f scripts/import_attendance.sql
+--   for macOS or linux : psql -d motorph -f scripts/import_attendance.sql 
+
 
 BEGIN;
 
