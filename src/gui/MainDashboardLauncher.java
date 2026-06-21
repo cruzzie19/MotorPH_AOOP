@@ -14,14 +14,19 @@ import repository.DbEmployeeRepository;
 import repository.EmployeeRepository;
 
 import javax.swing.*;
+import repository.CredentialRepository;
+import repository.DbCredentialRepository;
+import service.auth.AccountService;
 
 public class MainDashboardLauncher {
 
     public static void launch(Employee loggedInEmployee) {
-        EmployeeRepository repo = new DbEmployeeRepository();
+        EmployeeRepository empRepo = new DbEmployeeRepository();
+        AccountService accServ = AccountService.createDefault();
+        CredentialRepository credRepo = new DbCredentialRepository();
 
         SwingUtilities.invokeLater(() ->
-                new MainDashboardFrame(repo, loggedInEmployee).setVisible(true)
+                new MainDashboardFrame(empRepo, loggedInEmployee, accServ, credRepo).setVisible(true)
         );
     }
 }

@@ -213,32 +213,6 @@ public class LoginDialog extends JDialog {
         tfUsername = createStyledTextField();
         pfPassword = createStyledPasswordField();
 
-        lblForgotPassword = new JLabel("<html><u>Forgot Password?</u></html>");
-        lblForgotPassword.setFont(fontLink);
-        lblForgotPassword.setForeground(LINK_COLOR);
-        lblForgotPassword.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        lblForgotPassword.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                showChangePasswordDialog();
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                lblForgotPassword.setForeground(LINK_HOVER_COLOR);
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                lblForgotPassword.setForeground(LINK_COLOR);
-            }
-        });
-
-        JPanel forgotPanel = new JPanel(new BorderLayout());
-        forgotPanel.setOpaque(false);
-        forgotPanel.setPreferredSize(new Dimension(fieldWidth, getTextHeight(fontLink) + 4));
-        forgotPanel.add(lblForgotPassword, BorderLayout.EAST);
-
         btnLogin = new JButton("Login");
         btnLogin.setFont(fontButton);
         btnLogin.setForeground(Color.WHITE);
@@ -276,7 +250,6 @@ public class LoginDialog extends JDialog {
 
         gbc.gridy++;
         gbc.insets = new Insets(forgotGap, 0, 0, 0);
-        cardPanel.add(forgotPanel, gbc);
 
         gbc.gridy++;
         gbc.insets = new Insets(beforeButtonGap, 0, 0, 0);

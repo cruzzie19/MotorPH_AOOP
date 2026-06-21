@@ -23,6 +23,9 @@ import service.SessionManager;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.Arrays;
+import repository.CredentialRepository;
+import service.auth.AccountService;
 
 public class MainDashboardFrame extends JFrame {
 
@@ -36,12 +39,17 @@ public class MainDashboardFrame extends JFrame {
     private static final Color SIDEBAR_BG = Color.BLACK;
     private static final Color MAIN_BG = new Color(242, 242, 242);
     private static final Color TEXT_LIGHT = Color.WHITE;
+    private static final Color TEXT_DARK = new Color(35, 35, 35);
     private static final Color ACCENT = new Color(20, 20, 90);
     private static final Color MUTED = new Color(145, 145, 145);
+    private static final Color WHITE = Color.WHITE;
+    private static final Color MAIN_BLUE = new Color(0, 102, 204);
+    private static final Color HOVER_BLUE = new Color(0, 82, 163);
 
     private final EmployeeRepository employeeRepo;
     private final Employee currentUser;
     private final LeaveService leaveService;
+    private final AccountService accountService;
 
     private final String currentUserId;
     private final String currentUserName;
@@ -51,8 +59,14 @@ public class MainDashboardFrame extends JFrame {
     private final CardLayout cardLayout;
     private final JPanel contentPanel;
 
-    public MainDashboardFrame(EmployeeRepository employeeRepo, Employee loggedInEmployee) {
+    public MainDashboardFrame(EmployeeRepository employeeRepo, Employee loggedInEmployee, AccountService accountService, CredentialRepository credRepo) {
         super("MotorPH Payroll System");
+        
+        if (accountService != null) {
+            this.accountService = accountService;
+        } else {
+            this.accountService = new AccountService(credRepo, employeeRepo);
+        }
 
         this.employeeRepo = employeeRepo;
         this.currentUser = SessionManager.getCurrentUser() != null
@@ -207,6 +221,100 @@ public class MainDashboardFrame extends JFrame {
 
         JPanel rightProfile = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
         rightProfile.setOpaque(false);
+        
+        JButton btnChangePassword = new JButton("Change Password");
+        btnChangePassword.setPreferredSize(new Dimension(140, 32));
+        btnChangePassword.setBackground(MAIN_BLUE);
+        btnChangePassword.setForeground(WHITE);
+        btnChangePassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        btnChangePassword.setFocusPainted(false);
+        btnChangePassword.setBorder(BorderFactory.createEmptyBorder());
+        btnChangePassword.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        
+        btnChangePassword.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btnChangePassword.setBackground(HOVER_BLUE);
+            }
+
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btnChangePassword.setBackground(MAIN_BLUE);
+            }
+        });
+        
+        btnChangePassword.addActionListener(e -> {
+            Employee user = SessionManager.getCurrentUser();
+            if (user == null) {
+                JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(topBar), "No active user session detected.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            String targetEmployeeId = user.getId();
+            
+            JPanel form = new JPanel(new GridLayout(0, 1, 6, 6));
+
+            Color textDark = (this.TEXT_DARK != null) ? this.TEXT_DARK : new Color(35, 35, 35);
+
+            JLabel lblUsernameTitle = new JLabel("Username");
+            JLabel lblUsernameValue = new JLabel(targetEmployeeId);
+            lblUsernameValue.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            lblUsernameValue.setForeground(textDark);
+
+            JPasswordField newPasswordField = new JPasswordField(20);
+            JPasswordField confirmPasswordField = new JPasswordField(20);
+
+            form.add(lblUsernameTitle);
+            form.add(lblUsernameValue);
+            form.add(new JLabel("New Password"));
+            form.add(newPasswordField);
+            form.add(new JLabel("Confirm New Password"));
+            form.add(confirmPasswordField);
+
+            int option = JOptionPane.showConfirmDialog(
+                    SwingUtilities.getWindowAncestor(topBar),
+                    form,
+                    "Change Password",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
+            );
+
+            if (option != JOptionPane.OK_OPTION) {
+                return;
+            }
+
+            char[] newPassword = newPasswordField.getPassword();
+            char[] confirmPassword = confirmPasswordField.getPassword();
+
+            try {
+                if (newPassword.length == 0) {
+                    JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(topBar), "New password cannot be blank.", "Change Password", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (!java.util.Arrays.equals(newPassword, confirmPassword)) {
+                    JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(topBar), "New passwords do not match.", "Change Password", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                boolean changed = this.accountService.registerOrUpdate(targetEmployeeId, newPassword);
+
+                if (!changed) {
+                    JOptionPane.showMessageDialog(
+                        SwingUtilities.getWindowAncestor(topBar),
+                        "Failed to change the password due to system error.",
+                        "Change Password",
+                        JOptionPane.ERROR_MESSAGE
+                    );
+                    return;
+                }
+
+                JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor(topBar), "Password changed successfully.", "Change Password", JOptionPane.INFORMATION_MESSAGE);
+
+            } finally {
+                java.util.Arrays.fill(newPassword, '\0');
+                java.util.Arrays.fill(confirmPassword, '\0');
+            }
+        });
 
         JPanel textPanel = new JPanel();
         textPanel.setOpaque(false);
@@ -240,6 +348,7 @@ public class MainDashboardFrame extends JFrame {
         avatar.setOpaque(false);
         avatar.setPreferredSize(new Dimension(56, 56));
 
+        rightProfile.add(btnChangePassword);
         rightProfile.add(textPanel);
         rightProfile.add(avatar);
 
@@ -299,6 +408,72 @@ public class MainDashboardFrame extends JFrame {
     private String safe(String value) {
         return value == null ? "" : value.trim();
     }
+    
+    
+    
+    private void showChangePasswordDialog(String targetEmployeeId) {
+        JLabel lblUsernameValue = new JLabel(targetEmployeeId);
+        lblUsernameValue.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblUsernameValue.setForeground(TEXT_DARK);
+
+        JPasswordField newPasswordField = new JPasswordField(20);
+        JPasswordField confirmPasswordField = new JPasswordField(20);
+
+        JPanel form = new JPanel(new GridLayout(0, 1, 6, 6));
+        form.add(new JLabel("Username"));
+        form.add(lblUsernameValue);
+        form.add(new JLabel("New Password"));
+        form.add(newPasswordField);
+        form.add(new JLabel("Confirm New Password"));
+        form.add(confirmPasswordField);
+
+        int option = JOptionPane.showConfirmDialog(
+                this,
+                form,
+                "Change Password",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (option != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        char[] newPassword = newPasswordField.getPassword();
+        char[] confirmPassword = confirmPasswordField.getPassword();
+
+        try {
+            if (newPassword.length == 0) {
+                JOptionPane.showMessageDialog(this, "New password cannot be blank.", "Change Password", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (!Arrays.equals(newPassword, confirmPassword)) {
+                JOptionPane.showMessageDialog(this, "New passwords do not match.", "Change Password", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            //AccountService accountService = AccountService.createDefault();
+            boolean changed = accountService.registerOrUpdate(targetEmployeeId, newPassword);
+
+            if (!changed) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Failed to change the password due to system error.",
+                        "Change Password",
+                        JOptionPane.ERROR_MESSAGE
+                );
+                return;
+            }
+
+            JOptionPane.showMessageDialog(this, "Password changed successfully.", "Change Password", JOptionPane.INFORMATION_MESSAGE);
+
+        } finally {
+            Arrays.fill(newPassword, '\0');
+            Arrays.fill(confirmPassword, '\0');
+        }
+    }
+    
+    
 
     private void handleLogout() {
         int confirm = JOptionPane.showConfirmDialog(
