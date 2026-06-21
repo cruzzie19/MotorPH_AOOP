@@ -1,5 +1,5 @@
-DROP SCHEMA public CASCADE;
-CREATE SCHEMA public;
+--DROP SCHEMA public CASCADE;
+--CREATE SCHEMA public;
 
 CREATE TABLE employee (
     employee_id VARCHAR(10) PRIMARY KEY,
