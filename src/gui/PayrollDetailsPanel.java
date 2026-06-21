@@ -5,7 +5,7 @@
 
 package gui;
 
-import service.PayrollComputationService;
+import model.Payslip;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -42,7 +42,7 @@ public class PayrollDetailsPanel extends JPanel {
     private static final Font FONT_BUTTON = new Font("Segoe UI", Font.PLAIN, 15);
 
     private final Mode mode;
-    private PayrollComputationService.PayslipResult result;
+    private Payslip result;
 
     private final JLabel backLabel = new JLabel("<html><u>Back</u></html>");
     private final JComboBox<String> monthComboBox = new JComboBox<>();
@@ -367,7 +367,7 @@ public class PayrollDetailsPanel extends JPanel {
         updatePeriodLabel(defaultMonth);
     }
 
-    public void displayPayslip(PayrollComputationService.PayslipResult result) {
+    public void displayPayslip(Payslip result) {
         this.result = result;
 
         if (result == null) {

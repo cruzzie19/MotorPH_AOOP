@@ -8,11 +8,15 @@ package gui;
 import RBAC.Permission;
 import model.AttendanceRecord;
 import model.Employee;
+import model.Payslip;
 import repository.AttendanceRepository;
-import repository.DbAttendanceRepository;
+import repository.CsvAttendanceRepository;
+import repository.DbPayrollRepository;
 import repository.EmployeeRepository;
+import repository.PayrollRepository;
 import service.AuthorizationService;
 import service.PayrollComputationService;
+import service.PayslipService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -52,6 +56,9 @@ public class PayrollPanel extends JPanel {
     private final Employee currentUser;
     private final EmployeeRepository employeeRepository;
     private final PayrollComputationService payrollService;
+    private final PayslipService payslipService;
+
+    private Payslip lastGeneratedPayslip;
 
     private final CardLayout innerCardLayout = new CardLayout();
     private final JPanel innerContentPanel = new JPanel(innerCardLayout);
@@ -75,7 +82,10 @@ public class PayrollPanel extends JPanel {
         this.currentUser = currentUser;
         this.employeeRepository = employeeRepository;
         this.payrollService = new PayrollComputationService();
-        this.attendanceRepository = new DbAttendanceRepository();
+        this.attendanceRepository = new CsvAttendanceRepository();
+
+        PayrollRepository payrollRepository = new DbPayrollRepository();
+        this.payslipService = new PayslipService(payrollRepository);
 
         setLayout(new BorderLayout());
         setOpaque(false);
@@ -509,6 +519,28 @@ public class PayrollPanel extends JPanel {
             panel.setSubmitAction(() -> {
                 refreshGeneratedPayslip(panel, employee);
 
+                if (lastGeneratedPayslip == null) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Cannot generate payroll: no hours worked were entered.",
+                            "Payroll",
+                            JOptionPane.WARNING_MESSAGE
+                    );
+                    return;
+                }
+
+                try {
+                    payslipService.savePayslip(lastGeneratedPayslip);
+                } catch (RuntimeException ex) {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Failed to save payroll: " + ex.getMessage(),
+                            "Payroll Error",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                    return;
+                }
+
                 JOptionPane.showMessageDialog(
                         this,
                         "Payroll generated successfully.",
@@ -597,11 +629,14 @@ public class PayrollPanel extends JPanel {
     private void refreshViewedPayslip(PayrollDetailsPanel panel, Employee employee) {
         YearMonth month = parseYearMonth(panel.getSelectedMonthText());
 
-        List<AttendanceRecord> attendanceRecords =
-                attendanceRepository.findByEmployeeId(employee.getId());
+        Payslip result = payslipService.getPayslip(employee.getId(), month);
 
-        PayrollComputationService.PayslipResult result =
-                payrollService.computePayslipFromAttendance(employee, attendanceRecords, month);
+        if (result == null) {
+            List<AttendanceRecord> attendanceRecords =
+                    attendanceRepository.findByEmployeeId(employee.getId());
+
+            result = payrollService.computePayslipFromAttendance(employee, attendanceRecords, month);
+        }
 
         panel.displayPayslip(result);
     }
@@ -622,9 +657,10 @@ public class PayrollPanel extends JPanel {
             }
         }
 
-        PayrollComputationService.PayslipResult result =
+        Payslip result =
                 payrollService.computePayslipFromHoursWorked(employee, hoursWorked, month);
 
+        this.lastGeneratedPayslip = result;
         panel.displayPayslip(result);
     }
 }

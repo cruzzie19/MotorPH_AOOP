@@ -7,6 +7,7 @@ package service;
 
 import model.AttendanceRecord;
 import model.Employee;
+import model.Payslip;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -17,6 +18,16 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * Pure computation service for payroll.
+ *
+ * <p>Reworked: this class used to carry its own nested
+ * {@code PayslipResult} class. Now that {@code model.Payslip} exists as a
+ * persistable model, this service builds and returns {@code Payslip}
+ * instances instead. This class still does <b>not</b> talk to any
+ * repository - persistence is handled separately by
+ * {@link PayslipService} / {@code repository.PayrollRepository}.</p>
+ */
 public class PayrollComputationService {
 
     private static final BigDecimal SSS_RATE = new BigDecimal("0.04");
@@ -29,7 +40,7 @@ public class PayrollComputationService {
     private static final DateTimeFormatter ATTENDANCE_TIME_FORMAT =
             DateTimeFormatter.ofPattern("H:mm");
 
-    public PayslipResult computePayslipFromAttendance(
+    public Payslip computePayslipFromAttendance(
             Employee employee,
             List<AttendanceRecord> attendanceRecords,
             YearMonth targetMonth
@@ -46,7 +57,7 @@ public class PayrollComputationService {
         return buildPayslip(employee, hoursWorked, targetMonth);
     }
 
-    public PayslipResult computePayslipFromHoursWorked(
+    public Payslip computePayslipFromHoursWorked(
             Employee employee,
             BigDecimal hoursWorked,
             YearMonth targetMonth
@@ -57,7 +68,7 @@ public class PayrollComputationService {
         return buildPayslip(employee, safeHoursWorked, targetMonth);
     }
 
-    private PayslipResult buildPayslip(
+    private Payslip buildPayslip(
             Employee employee,
             BigDecimal hoursWorked,
             YearMonth targetMonth
@@ -98,7 +109,7 @@ public class PayrollComputationService {
 
         BigDecimal netPay = scale(grossPay.subtract(totalDeductions));
 
-        return new PayslipResult(
+        return new Payslip(
                 employee.getId(),
                 employee.getFullName(),
                 safe(employee.getPosition()),
@@ -203,89 +214,5 @@ public class PayrollComputationService {
 
     private String safe(String value) {
         return value == null ? "" : value.trim();
-    }
-
-    public static class PayslipResult {
-        private final String employeeId;
-        private final String employeeName;
-        private final String position;
-        private final String employeeType;
-        private final YearMonth payrollMonth;
-        private final BigDecimal hoursWorked;
-        private final BigDecimal hourlyRate;
-        private final BigDecimal basicPay;
-        private final BigDecimal riceSubsidy;
-        private final BigDecimal phoneAllowance;
-        private final BigDecimal clothingAllowance;
-        private final BigDecimal totalAllowance;
-        private final BigDecimal grossPay;
-        private final BigDecimal tax;
-        private final BigDecimal sss;
-        private final BigDecimal philHealth;
-        private final BigDecimal pagIbig;
-        private final BigDecimal totalDeductions;
-        private final BigDecimal netPay;
-
-        public PayslipResult(
-                String employeeId,
-                String employeeName,
-                String position,
-                String employeeType,
-                YearMonth payrollMonth,
-                BigDecimal hoursWorked,
-                BigDecimal hourlyRate,
-                BigDecimal basicPay,
-                BigDecimal riceSubsidy,
-                BigDecimal phoneAllowance,
-                BigDecimal clothingAllowance,
-                BigDecimal totalAllowance,
-                BigDecimal grossPay,
-                BigDecimal tax,
-                BigDecimal sss,
-                BigDecimal philHealth,
-                BigDecimal pagIbig,
-                BigDecimal totalDeductions,
-                BigDecimal netPay
-        ) {
-            this.employeeId = employeeId;
-            this.employeeName = employeeName;
-            this.position = position;
-            this.employeeType = employeeType;
-            this.payrollMonth = payrollMonth;
-            this.hoursWorked = hoursWorked;
-            this.hourlyRate = hourlyRate;
-            this.basicPay = basicPay;
-            this.riceSubsidy = riceSubsidy;
-            this.phoneAllowance = phoneAllowance;
-            this.clothingAllowance = clothingAllowance;
-            this.totalAllowance = totalAllowance;
-            this.grossPay = grossPay;
-            this.tax = tax;
-            this.sss = sss;
-            this.philHealth = philHealth;
-            this.pagIbig = pagIbig;
-            this.totalDeductions = totalDeductions;
-            this.netPay = netPay;
-        }
-
-        public String getEmployeeId() { return employeeId; }
-        public String getEmployeeName() { return employeeName; }
-        public String getPosition() { return position; }
-        public String getEmployeeType() { return employeeType; }
-        public YearMonth getPayrollMonth() { return payrollMonth; }
-        public BigDecimal getHoursWorked() { return hoursWorked; }
-        public BigDecimal getHourlyRate() { return hourlyRate; }
-        public BigDecimal getBasicPay() { return basicPay; }
-        public BigDecimal getRiceSubsidy() { return riceSubsidy; }
-        public BigDecimal getPhoneAllowance() { return phoneAllowance; }
-        public BigDecimal getClothingAllowance() { return clothingAllowance; }
-        public BigDecimal getTotalAllowance() { return totalAllowance; }
-        public BigDecimal getGrossPay() { return grossPay; }
-        public BigDecimal getTax() { return tax; }
-        public BigDecimal getSss() { return sss; }
-        public BigDecimal getPhilHealth() { return philHealth; }
-        public BigDecimal getPagIbig() { return pagIbig; }
-        public BigDecimal getTotalDeductions() { return totalDeductions; }
-        public BigDecimal getNetPay() { return netPay; }
     }
 }
