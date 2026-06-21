@@ -1,5 +1,5 @@
---DROP SCHEMA public CASCADE;
---CREATE SCHEMA public;
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
 
 CREATE TABLE employee (
     employee_id VARCHAR(10) PRIMARY KEY,
@@ -75,14 +75,26 @@ CREATE TABLE leave_request (
 CREATE TABLE payroll (
     payroll_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     employee_id VARCHAR(10) NOT NULL,
+    employee_name VARCHAR(200) NOT NULL,
+    position VARCHAR(100) NOT NULL,
+    employee_type VARCHAR(50) NOT NULL,
     period_start DATE NOT NULL,
     period_end DATE NOT NULL,
+    hours_worked NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    hourly_rate NUMERIC(10, 4) NOT NULL DEFAULT 0,
+    basic_pay NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    rice_subsidy NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    phone_allowance NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    clothing_allowance NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    total_allowance NUMERIC(10, 2) NOT NULL DEFAULT 0,
     gross_pay NUMERIC(12, 2) NOT NULL DEFAULT 0,
     sss_deduction NUMERIC(10, 2) NOT NULL DEFAULT 0,
     philhealth_deduction NUMERIC(10, 2) NOT NULL DEFAULT 0,
     pag_ibig_deduction NUMERIC(10, 2) NOT NULL DEFAULT 0,
     tax_withheld NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    total_deductions NUMERIC(10, 2) NOT NULL DEFAULT 0,
     net_pay NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    generated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_payroll_employee
         FOREIGN KEY (employee_id)
         REFERENCES employee (employee_id)
@@ -90,6 +102,7 @@ CREATE TABLE payroll (
     CONSTRAINT uq_payroll_employee_period UNIQUE (employee_id, period_start, period_end),
     CONSTRAINT ck_payroll_date_range CHECK (period_end >= period_start)
 );
+
 
 CREATE TABLE credential (
     employee_id VARCHAR(10) PRIMARY KEY,
@@ -108,4 +121,3 @@ CREATE INDEX idx_payroll_employee_period ON payroll (employee_id, period_start, 
 CREATE INDEX idx_employee_supervisor_id ON employee (supervisor_id);
 CREATE INDEX idx_employee_role ON employee (role);
 
---INSERT INTO employee VALUES (10001,'Garcia','Manuel III','1983-10-11','Valero Carpark Building Valero Street 1227, Makati City','966-860-270','44-4506057-3','820126853951','442-605-657-000','691295330870','Regular','Chief Executive Officer',NULL,'HR',90000,1500,2000,1000,45000,535.71);

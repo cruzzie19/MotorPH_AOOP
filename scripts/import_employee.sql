@@ -1,6 +1,6 @@
 -- Run this with psql after creating the PostgreSQL schema.
 -- Example:
---   psql -d motorph -f scripts/import_employee.sql
+--   & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -d motorph -f scripts/import_employee.sql
 -- This script only seeds the employee table.
 
 BEGIN;

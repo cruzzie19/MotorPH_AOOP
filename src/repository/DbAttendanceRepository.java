@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 public class DbAttendanceRepository implements AttendanceRepository {
@@ -262,23 +263,23 @@ public class DbAttendanceRepository implements AttendanceRepository {
         WHERE employee_id = ?
         AND work_date = ?
         """;
+        
+        java.time.format.DateTimeFormatter flexibleFormatter = new java.time.format.DateTimeFormatterBuilder().appendPattern("H:mm").optionalStart().appendPattern(":ss").optionalEnd().toFormatter();
 
         try (Connection connection = DbConnectionFactory.open(); PreparedStatement statement = connection.prepareStatement(sql)) {
 
             if (record.getLogIn() == null || record.getLogIn().isBlank()) {
                 statement.setTime(1, null);
             } else {
-                statement.setTime(
-                        1,
-                        java.sql.Time.valueOf(record.getLogIn() + ":00"));
+                LocalTime logInTime = LocalTime.parse(record.getLogIn().strip(), flexibleFormatter);
+                statement.setTime(1, java.sql.Time.valueOf(logInTime));
             }
 
             if (record.getLogOut() == null || record.getLogOut().isBlank()) {
                 statement.setTime(2, null);
             } else {
-                statement.setTime(
-                        2,
-                        java.sql.Time.valueOf(record.getLogOut() + ":00"));
+                LocalTime logOutTime = LocalTime.parse(record.getLogOut().strip(), flexibleFormatter);
+                statement.setTime(2, java.sql.Time.valueOf(logOutTime));
             }
 
             statement.setString(3, record.getEmployeeId());
