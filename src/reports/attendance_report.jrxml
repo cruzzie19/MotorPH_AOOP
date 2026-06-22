@@ -134,16 +134,6 @@
         </band>
     </detail>
 
-    <summary>
-        <band height="30">
-            <textField>
-                <reportElement x="0" y="6" width="535" height="18"/>
-                <textElement><font fontName="SansSerif" size="10" isItalic="true"/></textElement>
-                <textFieldExpression><![CDATA["Total records: " + $V{recordCount}]]></textFieldExpression>
-            </textField>
-        </band>
-    </summary>
-
     <pageFooter>
         <band height="20">
             <textField>
@@ -153,5 +143,15 @@
             </textField>
         </band>
     </pageFooter>
+
+    <summary>
+        <band height="30">
+            <textField>
+                <reportElement x="0" y="6" width="535" height="18"/>
+                <textElement><font fontName="SansSerif" size="10" isItalic="true"/></textElement>
+                <textFieldExpression><![CDATA["Total records: " + $V{recordCount}]]></textFieldExpression>
+            </textField>
+        </band>
+    </summary>
 
 </jasperReport>
