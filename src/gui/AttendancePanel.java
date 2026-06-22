@@ -1,6 +1,7 @@
 /**
  *
  * @author Leianna Cruz
+ * @author Khaesey Angel Tablante
  */
 
 package gui;
@@ -8,6 +9,7 @@ package gui;
 import model.AttendanceRecord;
 import model.Employee;
 import repository.DbAttendanceRepository;
+import service.AttendanceReportService; 
 import service.AttendanceService;
 import service.SessionManager;
 
@@ -45,6 +47,7 @@ public class AttendancePanel extends JPanel {
     private static final String SEARCH_PLACEHOLDER = "Employee ID";
 
     private final AttendanceService attendanceService;
+    private final AttendanceReportService reportService; 
     private final Employee currentUser;
 
     private final CardLayout cardLayout = new CardLayout();
@@ -63,6 +66,7 @@ public class AttendancePanel extends JPanel {
     private JButton btnRefresh;
     private JButton btnViewAll;
     private JButton btnViewMine;
+    private JButton btnGenerateReport;
 
     private JTextField txtEmployeeFilter;
 
@@ -75,6 +79,7 @@ public class AttendancePanel extends JPanel {
 
     public AttendancePanel(AttendanceService attendanceService) {
         this.attendanceService = attendanceService;
+        this.reportService = new AttendanceReportService(attendanceService); 
         this.currentUser = SessionManager.getCurrentUser();
 
         setLayout(new BorderLayout());
@@ -141,6 +146,10 @@ public class AttendancePanel extends JPanel {
             leftButtons.add(btnViewMine);
             leftButtons.add(btnViewAll);
         }
+
+        btnGenerateReport = createWhiteButton("Report"); 
+        btnGenerateReport.addActionListener(e -> handleGenerateReport());
+        leftButtons.add(btnGenerateReport);
 
         btnUpdate = createBlackButton("Update");
         btnDelete = createBlackButton("Delete");
@@ -318,6 +327,20 @@ public class AttendancePanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Time Out recorded successfully.");
         } catch (IllegalArgumentException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Time Out Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleGenerateReport() { 
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "No logged-in employee found.", "Report Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            reportService.generateAndShowReport(currentUser);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this, "Failed to generate report: " + ex.getMessage(),
+                    "Report Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

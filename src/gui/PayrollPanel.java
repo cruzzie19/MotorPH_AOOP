@@ -1,6 +1,7 @@
 /**
  *
  * @author Leianna Cruz
+ * @author Khaesey Angel Tablante
  */
 
 package gui;
@@ -16,6 +17,7 @@ import repository.EmployeeRepository;
 import repository.PayrollRepository;
 import service.AuthorizationService;
 import service.PayrollComputationService;
+import service.PayrollReportService; 
 import service.PayslipService;
 
 import javax.swing.*;
@@ -57,6 +59,7 @@ public class PayrollPanel extends JPanel {
     private final EmployeeRepository employeeRepository;
     private final PayrollComputationService payrollService;
     private final PayslipService payslipService;
+    private final PayrollReportService reportService;
 
     private Payslip lastGeneratedPayslip;
 
@@ -69,6 +72,7 @@ public class PayrollPanel extends JPanel {
     private final JButton viewAllButton = createBlackButton("View All");
     private final JButton generateButton = createBlackButton("Generate");
     private final JButton viewButton = createBlackButton("View");
+    private final JButton reportButton = createWhiteButton("Report");
     private final JButton refreshButton = createWhiteButton("Refresh");
 
     private final DefaultTableModel tableModel;
@@ -86,6 +90,7 @@ public class PayrollPanel extends JPanel {
 
         PayrollRepository payrollRepository = new DbPayrollRepository();
         this.payslipService = new PayslipService(payrollRepository);
+        this.reportService = new PayrollReportService(payslipService);
 
         setLayout(new BorderLayout());
         setOpaque(false);
@@ -166,6 +171,7 @@ public class PayrollPanel extends JPanel {
         right.add(viewAllButton);
         right.add(generateButton);
         right.add(viewButton);
+        right.add(reportButton);
         right.add(refreshButton);
 
         top.add(left, BorderLayout.WEST);
@@ -313,6 +319,7 @@ public class PayrollPanel extends JPanel {
         searchField.addActionListener(e -> performSearch());
         viewButton.addActionListener(e -> viewSelectedRecord());
         generateButton.addActionListener(e -> generateSelectedPayroll());
+        reportButton.addActionListener(e -> handleGenerateReport());
     }
 
     private void applyPermissions() {
@@ -322,6 +329,7 @@ public class PayrollPanel extends JPanel {
         myRecordButton.setVisible(canViewOwnPayroll());
         viewButton.setVisible(canViewAnyPayslip());
         generateButton.setVisible(canProcessPayroll());
+        reportButton.setVisible(canViewAnyPayslip());
 
         refreshButton.setVisible(true);
     }
@@ -457,6 +465,20 @@ public class PayrollPanel extends JPanel {
         }
 
         showDetailCard(employee, false);
+    }
+
+    private void handleGenerateReport() {
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "No logged-in employee found.", "Report Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            reportService.generateAndShowReport(currentUser);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this, "Failed to generate report: " + ex.getMessage(),
+                    "Report Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void generateSelectedPayroll() {
