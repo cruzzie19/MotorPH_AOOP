@@ -16,6 +16,7 @@ import repository.DbPayrollRepository;
 import repository.EmployeeRepository;
 import repository.PayrollRepository;
 import service.AuthorizationService;
+import service.EmployeeService;
 import service.PayrollComputationService;
 import service.PayrollReportService; 
 import service.PayslipService;
@@ -72,7 +73,9 @@ public class PayrollPanel extends JPanel {
     private final JButton viewAllButton = createBlackButton("View All");
     private final JButton generateButton = createBlackButton("Generate");
     private final JButton viewButton = createBlackButton("View");
-    private final JButton reportButton = createWhiteButton("Report");
+    private final JButton myPayslipButton = createWhiteButton("My Payslip");
+    private final JButton allReportButton = createWhiteButton("All Report");
+    private final JButton deptSummaryButton = createWhiteButton("By Dept");
     private final JButton refreshButton = createWhiteButton("Refresh");
 
     private final DefaultTableModel tableModel;
@@ -89,7 +92,8 @@ public class PayrollPanel extends JPanel {
         this.attendanceRepository = new CsvAttendanceRepository();
 
         PayrollRepository payrollRepository = new DbPayrollRepository();
-        this.payslipService = new PayslipService(payrollRepository);
+        EmployeeService employeeServiceForReports = new EmployeeService(employeeRepository);
+        this.payslipService = new PayslipService(payrollRepository, employeeServiceForReports);
         this.reportService = new PayrollReportService(payslipService);
 
         setLayout(new BorderLayout());
@@ -171,7 +175,9 @@ public class PayrollPanel extends JPanel {
         right.add(viewAllButton);
         right.add(generateButton);
         right.add(viewButton);
-        right.add(reportButton);
+        right.add(myPayslipButton);
+        right.add(allReportButton);
+        right.add(deptSummaryButton);
         right.add(refreshButton);
 
         top.add(left, BorderLayout.WEST);
@@ -319,7 +325,9 @@ public class PayrollPanel extends JPanel {
         searchField.addActionListener(e -> performSearch());
         viewButton.addActionListener(e -> viewSelectedRecord());
         generateButton.addActionListener(e -> generateSelectedPayroll());
-        reportButton.addActionListener(e -> handleGenerateReport());
+        myPayslipButton.addActionListener(e -> handleGenerateOwnPayslip());
+        allReportButton.addActionListener(e -> handleGenerateAggregatedReport());
+        deptSummaryButton.addActionListener(e -> handleGenerateDepartmentSummary());
     }
 
     private void applyPermissions() {
@@ -329,7 +337,10 @@ public class PayrollPanel extends JPanel {
         myRecordButton.setVisible(canViewOwnPayroll());
         viewButton.setVisible(canViewAnyPayslip());
         generateButton.setVisible(canProcessPayroll());
-        reportButton.setVisible(canViewAnyPayslip());
+
+        myPayslipButton.setVisible(canViewAnyPayslip());
+        allReportButton.setVisible(reportService.canGenerateBroaderReports(currentUser));
+        deptSummaryButton.setVisible(reportService.canGenerateBroaderReports(currentUser));
 
         refreshButton.setVisible(true);
     }
@@ -467,16 +478,44 @@ public class PayrollPanel extends JPanel {
         showDetailCard(employee, false);
     }
 
-    private void handleGenerateReport() {
+    private void handleGenerateOwnPayslip() {
         if (currentUser == null) {
             JOptionPane.showMessageDialog(this, "No logged-in employee found.", "Report Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         try {
-            reportService.generateAndShowReport(currentUser);
+            reportService.generateOwnPayslipReport(currentUser);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this, "Failed to generate payslip: " + ex.getMessage(),
+                    "Report Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleGenerateAggregatedReport() {
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "No logged-in employee found.", "Report Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            reportService.generateAggregatedReport(currentUser);
         } catch (RuntimeException ex) {
             JOptionPane.showMessageDialog(this, "Failed to generate report: " + ex.getMessage(),
+                    "Report Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleGenerateDepartmentSummary() {
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "No logged-in employee found.", "Report Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            reportService.generateDepartmentSummaryReport(currentUser);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this, "Failed to generate department summary: " + ex.getMessage(),
                     "Report Error", JOptionPane.ERROR_MESSAGE);
         }
     }

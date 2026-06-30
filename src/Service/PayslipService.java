@@ -2,7 +2,6 @@
  *
  * @author Leianna Cruz
  * @author Khaesey Angel Tablante
- * @desc Khaesey
  */
 
 package service;
@@ -10,13 +9,17 @@ package service;
 import RBAC.Permission;
 import model.Employee;
 import model.Payslip;
+import model.PayrollSummary;
 import repository.PayrollRepository;
 
 import java.io.IOException;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Data-handling service for {@link Payslip} records.
@@ -33,9 +36,26 @@ import java.util.List;
 public class PayslipService {
 
     private final PayrollRepository repository;
+    private EmployeeService employeeService;
 
     public PayslipService(PayrollRepository repository) {
         this.repository = repository;
+    }
+
+    public PayslipService(PayrollRepository repository, EmployeeService employeeService) {
+        this.repository = repository;
+        this.employeeService = employeeService;
+    }
+
+    /**
+     * Allows the department lookup dependency to be supplied after
+     * construction, for call sites that build {@code PayslipService} via
+     * the single-argument constructor.
+     *
+     * @param employeeService used to resolve each employee's role/department
+     */
+    public void setEmployeeService(EmployeeService employeeService) {
+        this.employeeService = employeeService;
     }
 
     /**
@@ -180,7 +200,69 @@ public class PayslipService {
 
     /**
      * 
-     * Whether the given user now can view payroll/payslip records belonging to
+     * Builds a payroll summary grouped by department (an employee's
+     * {@link RBAC.Role}), covering every payslip on record. Only available
+     * to users with broader payroll-viewing permission; throws otherwise.
+     * Requires an {@link EmployeeService} to have been supplied (via the
+     * two-argument constructor or {@link #setEmployeeService}) so each
+     * payslip's employee can be resolved to a department.
+     *
+     * @author Khaesey Angel Tablante
+     * @param currentUser the logged-in employee requesting the summary
+     * @return one {@link PayrollSummary} per department, sorted alphabetically
+     */
+    public List<PayrollSummary> getPayrollSummaryByDepartment(Employee currentUser) {
+        validateEmployee(currentUser);
+
+        if (!canViewBroaderPayroll(currentUser)) {
+            throw new IllegalArgumentException("You do not have permission to view the department payroll summary.");
+        }
+        if (employeeService == null) {
+            throw new IllegalStateException("PayslipService is missing its EmployeeService dependency "
+                    + "needed to resolve departments. Call setEmployeeService(...) first.");
+        }
+
+        List<Payslip> payslips = getAllPayslips();
+
+        Map<String, PayrollSummary> summaries = new LinkedHashMap<>();
+        for (Payslip payslip : payslips) {
+            String department = resolveDepartment(payslip.getEmployeeId());
+
+            PayrollSummary summary = summaries.computeIfAbsent(department, PayrollSummary::new);
+            summary.setPayslipCount(summary.getPayslipCount() + 1);
+            summary.setTotalGrossPay(nz(summary.getTotalGrossPay()).add(nz(payslip.getGrossPay())));
+            summary.setTotalDeductions(nz(summary.getTotalDeductions()).add(nz(payslip.getTotalDeductions())));
+            summary.setTotalNetPay(nz(summary.getTotalNetPay()).add(nz(payslip.getNetPay())));
+        }
+
+        for (Map.Entry<String, PayrollSummary> entry : summaries.entrySet()) {
+            long uniqueEmployees = payslips.stream()
+                    .filter(p -> entry.getKey().equals(resolveDepartment(p.getEmployeeId())))
+                    .map(Payslip::getEmployeeId)
+                    .distinct()
+                    .count();
+            entry.getValue().setEmployeeCount((int) uniqueEmployees);
+        }
+
+        List<PayrollSummary> result = new ArrayList<>(summaries.values());
+        result.sort(Comparator.comparing(PayrollSummary::getDepartment));
+        return result;
+    }
+
+    private String resolveDepartment(String employeeId) {
+        Employee employee = employeeService.findById(employeeId);
+        if (employee == null || employee.getRole() == null) {
+            return "Unassigned";
+        }
+        String roleName = employee.getRole().getName();
+        return (roleName == null || roleName.trim().isEmpty()) ? "Unassigned" : roleName.trim();
+    }
+
+    private java.math.BigDecimal nz(java.math.BigDecimal value) {
+        return value == null ? java.math.BigDecimal.ZERO : value;
+    }
+
+
      * other employees (e.g. HR, Payroll, Accounting, Executive roles), as
      * opposed to only their own.
      *

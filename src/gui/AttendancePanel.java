@@ -67,6 +67,8 @@ public class AttendancePanel extends JPanel {
     private JButton btnViewAll;
     private JButton btnViewMine;
     private JButton btnGenerateReport;
+    private JButton btnMyReport;
+    private JButton btnAggregatedReport;
 
     private JTextField txtEmployeeFilter;
 
@@ -147,9 +149,20 @@ public class AttendancePanel extends JPanel {
             leftButtons.add(btnViewAll);
         }
 
-        btnGenerateReport = createWhiteButton("Report"); 
-        btnGenerateReport.addActionListener(e -> handleGenerateReport());
-        leftButtons.add(btnGenerateReport);
+        if (reportService.canGenerateAggregatedReport(currentUser)) {
+            btnMyReport = createWhiteButton("My Report");
+            btnAggregatedReport = createWhiteButton("All Report");
+
+            btnMyReport.addActionListener(e -> handleGenerateOwnReport());
+            btnAggregatedReport.addActionListener(e -> handleGenerateAggregatedReport());
+
+            leftButtons.add(btnMyReport);
+            leftButtons.add(btnAggregatedReport);
+        } else {
+            btnGenerateReport = createWhiteButton("Report");
+            btnGenerateReport.addActionListener(e -> handleGenerateOwnReport());
+            leftButtons.add(btnGenerateReport);
+        }
 
         btnUpdate = createBlackButton("Update");
         btnDelete = createBlackButton("Delete");
@@ -330,14 +343,28 @@ public class AttendancePanel extends JPanel {
         }
     }
 
-    private void handleGenerateReport() { 
+    private void handleGenerateOwnReport() {
         if (currentUser == null) {
             JOptionPane.showMessageDialog(this, "No logged-in employee found.", "Report Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         try {
-            reportService.generateAndShowReport(currentUser);
+            reportService.generateOwnReport(currentUser);
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this, "Failed to generate report: " + ex.getMessage(),
+                    "Report Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleGenerateAggregatedReport() {
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "No logged-in employee found.", "Report Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            reportService.generateAggregatedReport(currentUser);
         } catch (RuntimeException ex) {
             JOptionPane.showMessageDialog(this, "Failed to generate report: " + ex.getMessage(),
                     "Report Error", JOptionPane.ERROR_MESSAGE);
