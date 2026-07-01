@@ -12,7 +12,7 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.data.JREmptyDataSource;
+import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import net.sf.jasperreports.view.JasperViewer;
 
@@ -100,17 +100,28 @@ public class PayrollReportService {
                 return mb.compareTo(ma);
             });
 
-            Payslip latest = payslips.get(0);
-            Map<String, Object> parameters = buildPayslipParameters(latest);
+            Payslip firstPayslip = payslips.get(0);
+            Map<String, Object> firstParams = buildPayslipParameters(firstPayslip);
+            JasperPrint masterPrint = JasperFillManager.fillReport(report, firstParams, new JREmptyDataSource());
 
-            JasperPrint print = JasperFillManager.fillReport(report, parameters, new JREmptyDataSource());
-
-            String title = "MotorPH Payslip - " + safe(currentUser.getFullName());
-            JasperViewer viewer = new JasperViewer(print, false);
+            for (int i = 1; i < payslips.size(); i++) {
+                Payslip currentPayslip = payslips.get(i);
+                Map<String, Object> currentParams = buildPayslipParameters(currentPayslip);
+                
+                JasperPrint subPrint = JasperFillManager.fillReport(report, currentParams, new JREmptyDataSource());
+                
+                for (net.sf.jasperreports.engine.JRPrintPage page : subPrint.getPages()) {
+                    masterPrint.addPage(page);
+                }
+            }
+            
+            String title = "MotorPH Payslip History - " + safe(currentUser.getFullName());
+            JasperViewer viewer = new JasperViewer(masterPrint, false);
             viewer.setTitle(title);
             viewer.setVisible(true);
-
+            
         } catch (JRException e) {
+            e.printStackTrace();
             throw new RuntimeException("Failed to generate payslip.", e);
         }
     }

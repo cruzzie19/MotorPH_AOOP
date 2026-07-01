@@ -134,6 +134,17 @@
         </band>
     </detail>
 
+    <pageFooter>
+        <band height="20">
+            <textField>
+                <reportElement x="0" y="0" width="535" height="16"/>
+                <textElement textAlignment="Right"><font fontName="SansSerif" size="8"/></textElement>
+                <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER}]]></textFieldExpression>
+            </textField>
+        </band>
+    </pageFooter>
+    
+    
     <summary>
         <band height="30">
             <textField>
@@ -144,14 +155,5 @@
         </band>
     </summary>
 
-    <pageFooter>
-        <band height="20">
-            <textField>
-                <reportElement x="0" y="0" width="535" height="16"/>
-                <textElement textAlignment="Right"><font fontName="SansSerif" size="8"/></textElement>
-                <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER}]]></textFieldExpression>
-            </textField>
-        </band>
-    </pageFooter>
 
 </jasperReport>

@@ -147,9 +147,17 @@ public class PayrollPanel extends JPanel {
     }
 
     private JComponent buildTopBar() {
+        JPanel parent = new JPanel();
+        parent.setOpaque(false);
+        parent.setLayout(new BoxLayout(parent, BoxLayout.Y_AXIS));
+        parent.setBorder(new EmptyBorder(0, 0, 0, 0));
+        
         JPanel top = new JPanel(new BorderLayout());
         top.setOpaque(false);
-
+        
+        JPanel top2 = new JPanel(new BorderLayout());
+        top2.setOpaque(false);
+        
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         left.setOpaque(false);
 
@@ -170,20 +178,27 @@ public class PayrollPanel extends JPanel {
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         right.setOpaque(false);
+        
+        JPanel left2 = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        left2.setOpaque(false);
 
         right.add(myRecordButton);
         right.add(viewAllButton);
         right.add(generateButton);
         right.add(viewButton);
-        right.add(myPayslipButton);
-        right.add(allReportButton);
-        right.add(deptSummaryButton);
+        left2.add(myPayslipButton);
+        left2.add(allReportButton);
+        left2.add(deptSummaryButton);
         right.add(refreshButton);
 
         top.add(left, BorderLayout.WEST);
         top.add(right, BorderLayout.EAST);
+        top2.add(left2);
+        
+        parent.add(top);
+        parent.add(top2);
 
-        return top;
+        return parent;
     }
 
     private JComponent buildTableSection() {

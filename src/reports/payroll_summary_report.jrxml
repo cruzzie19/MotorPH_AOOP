@@ -2,8 +2,16 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
               xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
-              name="payroll_summary_report" pageWidth="595" pageHeight="842" columnWidth="535"
-              leftMargin="30" rightMargin="30" topMargin="20" bottomMargin="20"
+              name="payroll_summary_report" 
+              pageWidth="595" 
+              pageHeight="842" 
+              columnWidth="535"
+              columnCount="1"
+              columnSpacing="0"
+              leftMargin="30" 
+              rightMargin="30" 
+              topMargin="20" 
+              bottomMargin="20"
               uuid="b1a1c1a0-0000-0000-0000-000000000004">
 
     <parameter name="reportTitle" class="java.lang.String"/>
@@ -100,23 +108,23 @@
             </textField>
             <textField>
                 <reportElement x="135" y="0" width="75" height="22"/>
-                <textElement verticalAlignment="Middle" textAlignment="Center"><font fontName="SansSerif" size="10"/></textElement>
-                <textFieldExpression><![CDATA[$F{employeeCount}]]></textFieldExpression>
+                <textElement verticalAlignment="Middle" textAlignment="Center"><font fontName="SansSerif" size="10"/>
+                <textElementExpression><![CDATA[$F{employeeCount}]]></textElementExpression>
             </textField>
             <textField>
                 <reportElement x="210" y="0" width="75" height="22"/>
-                <textElement verticalAlignment="Middle" textAlignment="Center"><font fontName="SansSerif" size="10"/></textElement>
-                <textFieldExpression><![CDATA[$F{payslipCount}]]></textFieldExpression>
+                <textElement verticalAlignment="Middle" textAlignment="Center"><font fontName="SansSerif" size="10"/>
+                <textElementExpression><![CDATA[$F{payslipCount}]]></textElementExpression>
             </textField>
             <textField pattern="#,##0.00">
                 <reportElement x="285" y="0" width="83" height="22"/>
-                <textElement verticalAlignment="Middle" textAlignment="Right"><font fontName="SansSerif" size="10"/></textElement>
-                <textFieldExpression><![CDATA[$F{totalGrossPay}]]></textFieldExpression>
+                <textElement verticalAlignment="Middle" textAlignment="Right"><font fontName="SansSerif" size="10"/>
+                <textElementExpression><![CDATA[$F{totalGrossPay}]]></textElementExpression>
             </textField>
             <textField pattern="#,##0.00">
                 <reportElement x="368" y="0" width="83" height="22"/>
-                <textElement verticalAlignment="Middle" textAlignment="Right"><font fontName="SansSerif" size="10"/></textElement>
-                <textFieldExpression><![CDATA[$F{totalDeductions}]]></textFieldExpression>
+                <textElement verticalAlignment="Middle" textAlignment="Right"><font fontName="SansSerif" size="10"/>
+                <textElementExpression><![CDATA[$F{totalDeductions}]]></textElementExpression>
             </textField>
             <textField pattern="#,##0.00">
                 <reportElement x="451" y="0" width="84" height="22"/>
@@ -129,29 +137,29 @@
         </band>
     </detail>
 
-    <summary>
-        <band height="30">
-            <textField>
-                <reportElement x="0" y="6" width="300" height="18"/>
-                <textElement><font fontName="SansSerif" size="10" isItalic="true"/></textElement>
-                <textFieldExpression><![CDATA["Total employees: " + $V{grandTotalEmployees}]]></textFieldExpression>
-            </textField>
-            <textField pattern="#,##0.00">
-                <reportElement x="368" y="6" width="167" height="18"/>
-                <textElement textAlignment="Right"><font fontName="SansSerif" size="11" isBold="true"/></textElement>
-                <textFieldExpression><![CDATA["Grand Total Net Pay: " + $V{grandTotalNetPay}]]></textFieldExpression>
-            </textField>
-        </band>
-    </summary>
-
     <pageFooter>
         <band height="20">
             <textField>
-                <reportElement x="0" y="0" width="535" height="16"/>
+                <reportElement x="0" y="0" width="533" height="16"/>
                 <textElement textAlignment="Right"><font fontName="SansSerif" size="8"/></textElement>
                 <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER}]]></textFieldExpression>
             </textField>
         </band>
     </pageFooter>
+    
+    <summary>
+        <band height="30">
+            <textField>
+                <reportElement x="0" y="6" width="298" height="18"/>
+                <textElement><font fontName="SansSerif" size="10" isItalic="true"/></textElement>
+                <textFieldExpression><![CDATA["Total employees: " + $V{grandTotalEmployees}]]></textFieldExpression>
+            </textField>
+            <textField pattern="#,##0.00">
+                <reportElement x="368" y="6" width="165" height="18"/>
+                <textElement textAlignment="Right"><font fontName="SansSerif" size="11" isBold="true"/></textElement>
+                <textFieldExpression><![CDATA["Grand Total Net Pay: " + $V{grandTotalNetPay}]]></textFieldExpression>
+            </textField>
+        </band>
+    </summary>
 
 </jasperReport>

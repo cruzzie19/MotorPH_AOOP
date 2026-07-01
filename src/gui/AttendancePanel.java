@@ -149,6 +149,13 @@ public class AttendancePanel extends JPanel {
             leftButtons.add(btnViewAll);
         }
 
+        JPanel buttonRow2 = new JPanel(new BorderLayout());
+        buttonRow.setOpaque(false);
+        
+        JPanel leftButtons2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        leftButtons2.setOpaque(false);
+
+        
         if (reportService.canGenerateAggregatedReport(currentUser)) {
             btnMyReport = createWhiteButton("My Report");
             btnAggregatedReport = createWhiteButton("All Report");
@@ -156,12 +163,12 @@ public class AttendancePanel extends JPanel {
             btnMyReport.addActionListener(e -> handleGenerateOwnReport());
             btnAggregatedReport.addActionListener(e -> handleGenerateAggregatedReport());
 
-            leftButtons.add(btnMyReport);
-            leftButtons.add(btnAggregatedReport);
+            leftButtons2.add(btnMyReport);
+            leftButtons2.add(btnAggregatedReport);
         } else {
             btnGenerateReport = createWhiteButton("Report");
             btnGenerateReport.addActionListener(e -> handleGenerateOwnReport());
-            leftButtons.add(btnGenerateReport);
+            leftButtons2.add(btnGenerateReport);
         }
 
         btnUpdate = createBlackButton("Update");
@@ -187,8 +194,11 @@ public class AttendancePanel extends JPanel {
 
         buttonRow.add(leftButtons, BorderLayout.WEST);
         buttonRow.add(rightButtons, BorderLayout.EAST);
+        
+        buttonRow2.add(leftButtons2, BorderLayout.EAST);
 
         top.add(buttonRow);
+        top.add(buttonRow2);
 
         return top;
     }
